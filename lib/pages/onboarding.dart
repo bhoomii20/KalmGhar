@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'login.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -42,8 +43,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             isFirstPage: false,
             buttonText: 'Get Started',
             onButtonPressed: () {
-              // Navigate to home or login screen
-              Navigator.pushReplacementNamed(context, '/home');
+              // Navigate to login screen
+              Navigator.pushReplacementNamed(context, '/login');
             },
           ),
         ],
@@ -60,7 +61,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       children: [
         // Background wave
         Positioned.fill(
-          child: SvgPicture.asset('assets/images/wave.png', fit: BoxFit.cover),
+          child: Image.asset(
+            'assets/images/wave.png',
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(color: const Color(0xFF283891)); // fallback
+            },
+          ),
         ),
 
         // Content
@@ -99,7 +106,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     'KalmGhar',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontFamily: 'Poppins',
+                      fontFamily: 'Axiforma',
                       fontSize: 48,
                       fontWeight: FontWeight.w800,
                       foreground: Paint()
