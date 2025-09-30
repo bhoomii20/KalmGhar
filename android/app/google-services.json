@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "60505221299",
+    "project_id": "kalmghar-947b0",
+    "storage_bucket": "kalmghar-947b0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:60505221299:android:f8a4420e47a321d2db28c6",
+        "android_client_info": {
+          "package_name": "com.example.kalmghar"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDYul5M7wKyQzX4c1l46JaQyqRVR7NL69c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
