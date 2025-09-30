@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'pages/onboarding.dart';
 import 'pages/home.dart';
 import 'firebase_options.dart';
+import 'pages/login.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,6 +25,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/home': (context) => const HomePage(),
         '/onboarding': (context) => const OnboardingScreen(),
+        '/login': (context) => const LoginScreen(),
       },
     );
   }
