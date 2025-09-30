@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'home.dart';
+import 'roles.dart';
 
 // Main Login Screen (Screen 1)
 class LoginScreen extends StatefulWidget {
@@ -930,7 +931,10 @@ class _SignUpOTPScreenState extends State<SignUpOTPScreen> {
                     // Navigate to home after verification
                     Navigator.pushAndRemoveUntil(
                       context,
-                      MaterialPageRoute(builder: (context) => const HomePage()),
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            const ChooseRoleScreen(userName: 'User'),
+                      ),
                       (route) => false,
                     );
                   },

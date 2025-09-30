@@ -4,6 +4,7 @@ import 'pages/onboarding.dart';
 import 'pages/home.dart';
 import 'firebase_options.dart';
 import 'pages/login.dart';
+import 'pages/roles.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,6 +27,7 @@ class MyApp extends StatelessWidget {
         '/home': (context) => const HomePage(),
         '/onboarding': (context) => const OnboardingScreen(),
         '/login': (context) => const LoginScreen(),
+        '/roles': (context) => const ChooseRoleScreen(userName: 'User'),
       },
     );
   }
