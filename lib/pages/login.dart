@@ -238,10 +238,10 @@ class OTPVerificationScreen extends StatefulWidget {
 
 class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
   final List<TextEditingController> _otpControllers = List.generate(
-    4,
+    6,
     (_) => TextEditingController(),
   );
-  final List<FocusNode> _focusNodes = List.generate(4, (_) => FocusNode());
+  final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
 
   @override
   void dispose() {
@@ -326,7 +326,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
               const SizedBox(height: 12),
 
               Text(
-                'A 4 digit code has been sent to +91 ${widget.phoneNumber}',
+                'A 6 digit code has been sent to +91 ${widget.phoneNumber}',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontFamily: 'Axiforma',
@@ -340,10 +340,10 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
               // OTP Input boxes
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(4, (index) {
+                children: List.generate(6, (index) {
                   return Container(
-                    width: 60,
-                    height: 60,
+                    width: 50,
+                    height: 50,
                     margin: const EdgeInsets.symmetric(horizontal: 8),
                     child: TextField(
                       controller: _otpControllers[index],
@@ -369,7 +369,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
                         ),
                       ),
                       onChanged: (value) {
-                        if (value.length == 1 && index < 3) {
+                        if (value.length == 1 && index < 5) {
                           _focusNodes[index + 1].requestFocus();
                         } else if (value.isEmpty && index > 0) {
                           _focusNodes[index - 1].requestFocus();
@@ -867,7 +867,7 @@ class _SignUpOTPScreenState extends State<SignUpOTPScreen> {
               const SizedBox(height: 12),
 
               Text(
-                'A 4 digit code has been sent to +91 ${widget.phoneNumber}',
+                'A 6 digit code has been sent to +91 ${widget.phoneNumber}',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontFamily: 'Axiforma',
@@ -881,10 +881,10 @@ class _SignUpOTPScreenState extends State<SignUpOTPScreen> {
               // OTP Input boxes
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(4, (index) {
+                children: List.generate(6, (index) {
                   return Container(
-                    width: 60,
-                    height: 60,
+                    width: 50,
+                    height: 50,
                     margin: const EdgeInsets.symmetric(horizontal: 8),
                     child: TextField(
                       controller: _otpControllers[index],
