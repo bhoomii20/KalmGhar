@@ -24,9 +24,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       body: PageView(
         controller: _pageController,
         onPageChanged: (index) {
-          setState(() {
-            _currentPage = index;
-          });
+          setState(() {});
         },
         children: [
           _buildOnboardingPage(
@@ -62,7 +60,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       children: [
         // Background wave
         Positioned.fill(
-          child: SvgPicture.asset('assets/wave.svg', fit: BoxFit.cover),
+          child: SvgPicture.asset('assets/images/wave.png', fit: BoxFit.cover),
         ),
 
         // Content
@@ -72,7 +70,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               const Spacer(flex: 2),
 
               // Logo
-              SvgPicture.asset('assets/logo.svg', height: 120, width: 120),
+              SvgPicture.asset(
+                'assets/icons/logo.svg',
+                height: 120,
+                width: 120,
+              ),
 
               const SizedBox(height: 40),
 
@@ -81,9 +83,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 'Welcome to',
                 style: TextStyle(
                   color: Colors.white,
-                  fontFamily: 'Poppins',
+                  fontFamily: 'Axiforma',
                   fontSize: 20,
-                  fontWeight: FontWeight.w400,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
 
@@ -112,7 +114,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Colors.white,
-                      fontFamily: 'Poppins',
+                      fontFamily: 'Axiforma',
                       fontSize: 48,
                       fontWeight: FontWeight.w800,
                       shadows: [
@@ -151,7 +153,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         'Get people to work and make life\neasier!',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontFamily: 'Poppins',
+                          fontFamily: 'Axiforma',
                           fontSize: 16,
                           color: Colors.grey,
                           height: 1.5,
@@ -192,7 +194,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               Text(
                                 buttonText,
                                 style: const TextStyle(
-                                  fontFamily: 'Poppins',
+                                  fontFamily: 'Axiforma',
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
                                 ),
