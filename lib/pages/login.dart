@@ -273,7 +273,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
               const SizedBox(height: 20),
 
               // Logo
-              Image.asset('assets/ghar.png', height: 120),
+              Image.asset('assets/images/ghar.png', height: 120),
 
               const SizedBox(height: 30),
 
