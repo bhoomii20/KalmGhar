@@ -790,10 +790,10 @@ class SignUpOTPScreen extends StatefulWidget {
 
 class _SignUpOTPScreenState extends State<SignUpOTPScreen> {
   final List<TextEditingController> _otpControllers = List.generate(
-    4,
+    6,
     (_) => TextEditingController(),
   );
-  final List<FocusNode> _focusNodes = List.generate(4, (_) => FocusNode());
+  final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
 
   @override
   void dispose() {

@@ -62,7 +62,7 @@ class ChooseRoleScreen extends StatelessWidget {
                       Image.asset('assets/images/employee.png', height: 100),
                       const SizedBox(height: 16),
                       const Text(
-                        'Looking to Hire ?',
+                        'Looking for Work ?',
                         style: TextStyle(
                           fontFamily: 'Axiforma',
                           fontSize: 16,
@@ -101,7 +101,7 @@ class ChooseRoleScreen extends StatelessWidget {
                       Image.asset('assets/images/employer.png', height: 100),
                       const SizedBox(height: 16),
                       const Text(
-                        'Looking for Work ?',
+                        'Looking to Hire ?',
                         style: TextStyle(
                           fontFamily: 'Axiforma',
                           fontSize: 16,
@@ -386,8 +386,11 @@ class _AddSkillsScreenState extends State<AddSkillsScreen> {
     'Cleaning',
     'Plumbing',
     'Gardening',
+    'Add Other...',
   ];
   bool _showDropdown = false;
+  bool _showOtherField = false;
+  final TextEditingController _otherSkillController = TextEditingController();
 
   void _toggleSkill(String skill) {
     setState(() {
@@ -522,47 +525,84 @@ class _AddSkillsScreenState extends State<AddSkillsScreen> {
                   child: Column(
                     children: [
                       ..._availableSkills.map((skill) {
-                        return ListTile(
-                          title: Text(
-                            skill,
-                            style: const TextStyle(
-                              fontFamily: 'Axiforma',
-                              fontSize: 15,
+                        if (skill == 'Add Other...') {
+                          return ListTile(
+                            title: Text(
+                              skill,
+                              style: const TextStyle(
+                                fontFamily: 'Axiforma',
+                                fontSize: 15,
+                              ),
                             ),
-                          ),
-                          trailing: Icon(
-                            Icons.add_circle_outline,
-                            color: Colors.grey[700],
-                          ),
-                          onTap: () {
-                            _toggleSkill(skill);
-                            setState(() {
-                              _showDropdown = false;
-                            });
-                          },
-                        );
-                      }),
-                      ListTile(
-                        title: const Text(
-                          'Add other',
-                          style: TextStyle(
-                            fontFamily: 'Axiforma',
-                            fontSize: 15,
-                          ),
-                        ),
-                        trailing: Icon(
-                          Icons.add_circle_outline,
-                          color: Colors.grey[700],
-                        ),
-                        onTap: () {
-                          // Add custom skill functionality
-                          setState(() {
-                            _showDropdown = false;
-                          });
-                        },
-                      ),
+                            trailing: Icon(
+                              Icons.add_circle_outline,
+                              color: Colors.grey[700],
+                            ),
+                            onTap: () {
+                              setState(() {
+                                _showOtherField = true;
+                                _showDropdown = false;
+                              });
+                            },
+                          );
+                        } else {
+                          return ListTile(
+                            title: Text(
+                              skill,
+                              style: const TextStyle(
+                                fontFamily: 'Axiforma',
+                                fontSize: 15,
+                              ),
+                            ),
+                            trailing: Icon(
+                              Icons.add_circle_outline,
+                              color: Colors.grey[700],
+                            ),
+                            onTap: () {
+                              _toggleSkill(skill);
+                              setState(() {
+                                _showDropdown = false;
+                              });
+                            },
+                          );
+                        }
+                      }).toList(),
                     ],
                   ),
+                ),
+
+              if (_showOtherField)
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _otherSkillController,
+                        decoration: const InputDecoration(
+                          hintText: 'Enter new skill',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: () {
+                        final newSkill = _otherSkillController.text.trim();
+                        if (newSkill.isNotEmpty &&
+                            !_availableSkills.contains(newSkill)) {
+                          setState(() {
+                            _availableSkills.insert(
+                              _availableSkills.length - 1,
+                              newSkill,
+                            );
+                            _toggleSkill(newSkill);
+                            _showOtherField = false;
+                            _otherSkillController.clear();
+                          });
+                        }
+                      },
+                      child: const Text('Add'),
+                    ),
+                  ],
                 ),
 
               const Spacer(),
