@@ -515,7 +515,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         verificationCompleted: (PhoneAuthCredential credential) async {
           // Auto-verification (Android only)
           await _auth.signInWithCredential(credential);
-          await saveUserData();
+          //await saveUserData();
           if (mounted) {
             Navigator.pushAndRemoveUntil(
               context,
@@ -898,10 +898,8 @@ class SignUpOTPScreen extends StatefulWidget {
 class _SignUpOTPScreenState extends State<SignUpOTPScreen> {
   final List<TextEditingController> _otpControllers = List.generate(
     6,
-    6,
     (_) => TextEditingController(),
   );
-  final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
   final FirebaseAuth _auth = FirebaseAuth.instance;
   bool _isVerifying = false;
@@ -1088,7 +1086,6 @@ class _SignUpOTPScreenState extends State<SignUpOTPScreen> {
               const SizedBox(height: 12),
               Text(
                 'A 6 digit code has been sent to +91 ${widget.phoneNumber}',
-                'A 6 digit code has been sent to +91 ${widget.phoneNumber}',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontFamily: 'Axiforma',
@@ -1102,14 +1099,11 @@ class _SignUpOTPScreenState extends State<SignUpOTPScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(6, (index) {
-                children: List.generate(6, (index) {
                   return Container(
                     width: 50,
                     height: 50,
                     margin: const EdgeInsets.symmetric(horizontal: 8),
-                    width: 50,
-                    height: 60,
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
+
                     child: TextField(
                       controller: _otpControllers[index],
                       focusNode: _focusNodes[index],
