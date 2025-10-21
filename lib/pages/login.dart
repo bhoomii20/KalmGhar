@@ -7,7 +7,7 @@ import 'roles.dart';
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-// Main Login Screen (Screen 1)
+// Main Login Screen (Screen 1) - Updated with Firebase Authentication
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -18,12 +18,137 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _mobileController = TextEditingController();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  bool _isLoading = false;
 
   @override
   void dispose() {
     _usernameController.dispose();
     _mobileController.dispose();
     super.dispose();
+  }
+
+  // Validate inputs
+  bool _validateInputs() {
+    if (_usernameController.text.trim().isEmpty) {
+      showSnackBar(context, 'Please enter your username');
+      return false;
+    }
+
+    if (_mobileController.text.trim().isEmpty) {
+      showSnackBar(context, 'Please enter your mobile number');
+      return false;
+    }
+
+    if (_mobileController.text.trim().length != 10) {
+      showSnackBar(context, 'Please enter a valid 10-digit mobile number');
+      return false;
+    }
+
+    return true;
+  }
+
+  // Check if user exists in Firestore
+  Future<bool> _checkUserExists() async {
+    try {
+      final querySnapshot = await _firestore
+          .collection('users')
+          .where('username', isEqualTo: _usernameController.text.trim())
+          .where('phone', isEqualTo: _mobileController.text.trim())
+          .get();
+
+      return querySnapshot.docs.isNotEmpty;
+    } catch (e) {
+      showSnackBar(context, 'Error checking user: $e');
+      return false;
+    }
+  }
+
+  // Initiate Firebase Phone Authentication
+  Future<void> initiateLoginAuth() async {
+    // Validate inputs first
+    if (!_validateInputs()) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    // Check if user exists
+    bool userExists = await _checkUserExists();
+
+    if (!userExists) {
+      setState(() {
+        _isLoading = false;
+      });
+      showSnackBar(context, 'User not found. Please sign up first.');
+      return;
+    }
+
+    try {
+      String phoneNumber = '+91${_mobileController.text.trim()}';
+
+      await _auth.verifyPhoneNumber(
+        phoneNumber: phoneNumber,
+        verificationCompleted: (PhoneAuthCredential credential) async {
+          // Auto-verification (Android only)
+          try {
+            await _auth.signInWithCredential(credential);
+            if (mounted) {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => const HomePage()),
+                (route) => false,
+              );
+            }
+          } catch (e) {
+            showSnackBar(context, 'Auto-verification failed: $e');
+          }
+        },
+        verificationFailed: (FirebaseAuthException e) {
+          setState(() {
+            _isLoading = false;
+          });
+          showSnackBar(context, e.message ?? 'Verification failed');
+        },
+        codeSent: (String verificationId, int? resendToken) {
+          setState(() {
+            _isLoading = false;
+          });
+
+          // Navigate to OTP screen with verification ID
+          if (mounted) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => OTPVerificationScreen(
+                  phoneNumber: _mobileController.text.trim(),
+                ),
+              ),
+            );
+          }
+        },
+        codeAutoRetrievalTimeout: (String verificationId) {
+          print('Auto retrieval timeout');
+        },
+        timeout: const Duration(seconds: 60),
+      );
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      showSnackBar(context, 'Error: $e');
+    }
+  }
+
+  // Show error/success messages
+  void showSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
   }
 
   @override
@@ -113,16 +238,18 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 16),
 
-              // Mobile number field
+              // Mobile number field with validation
               TextField(
                 controller: _mobileController,
                 keyboardType: TextInputType.phone,
+                maxLength: 10,
                 decoration: InputDecoration(
                   prefixIcon: const Icon(
                     Icons.phone_outlined,
                     color: Colors.grey,
                   ),
                   hintText: 'Enter your mobile number',
+                  counterText: '',
                   hintStyle: const TextStyle(
                     fontFamily: 'Axiforma',
                     color: Colors.grey,
@@ -142,37 +269,38 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 24),
 
-              // Get OTP button
+              // Get OTP button with loading state
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => OTPVerificationScreen(
-                          phoneNumber: _mobileController.text,
-                        ),
-                      ),
-                    );
-                  },
+                  onPressed: _isLoading ? null : initiateLoginAuth,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF283891),
                     foregroundColor: Colors.white,
+                    disabledBackgroundColor: Colors.grey[400],
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     elevation: 0,
                   ),
-                  child: const Text(
-                    'Get OTP',
-                    style: TextStyle(
-                      fontFamily: 'Axiforma',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text(
+                          'Get OTP',
+                          style: TextStyle(
+                            fontFamily: 'Axiforma',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                 ),
               ),
 
@@ -455,6 +583,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
 }
 
 // Screen 3 - Sign Up Screen with Phone Authentication
+
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
 
@@ -514,16 +643,28 @@ class _SignUpScreenState extends State<SignUpScreen> {
         phoneNumber: phoneNumber,
         verificationCompleted: (PhoneAuthCredential credential) async {
           // Auto-verification (Android only)
-          await _auth.signInWithCredential(credential);
-          //await saveUserData();
-          if (mounted) {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const ChooseRoleScreen(userName: 'User'),
-              ),
-              (route) => false,
-            );
+          try {
+            await _auth.signInWithCredential(credential);
+
+            // FIXED: Now saving user data during auto-verification
+            await saveUserData();
+
+            if (mounted) {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ChooseRoleScreen(
+                    userName: _fullNameController.text.trim(),
+                  ),
+                ),
+                (route) => false,
+              );
+            }
+          } catch (e) {
+            showSnackBar(context, 'Auto-verification failed: $e');
+            setState(() {
+              _isLoading = false;
+            });
           }
         },
         verificationFailed: (FirebaseAuthException e) {
@@ -571,18 +712,32 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   Future<void> saveUserData() async {
     try {
-      await FirebaseFirestore.instance
+      // Get the current user's UID from Firebase Auth
+      String? uid = _auth.currentUser?.uid;
+
+      if (uid == null) {
+        throw Exception('User not authenticated');
+      }
+
+      // Save user data to Firestore using UID as document ID
+      await _firestore
           .collection('users')
           .doc(_usernameController.text.trim())
           .set({
+            'username': _usernameController.text.trim(),
             'email': _emailController.text.trim(),
-            //'name': _usernameController.text.trim(),
-            'phone': _mobileController.text.trim(),
+            'phoneNumber': _mobileController.text.trim(),
             'fullName': _fullNameController.text.trim(),
             'createdAt': FieldValue.serverTimestamp(),
           });
+
+      print('User data saved successfully');
     } catch (e) {
       print('Error saving user data: $e');
+      // Optionally show error to user
+      if (mounted) {
+        showSnackBar(context, 'Warning: Could not save user data');
+      }
     }
   }
 
@@ -990,11 +1145,11 @@ class _SignUpOTPScreenState extends State<SignUpOTPScreen> {
     try {
       await FirebaseFirestore.instance
           .collection('users')
-          .doc(_auth.currentUser?.uid)
+          .doc(widget.userData['username'])
           .set({
             'email': widget.userData['email'],
             'username': widget.userData['username'],
-            'phoneNumber': widget.userData['phoneNumber'],
+            'phone': widget.userData['phoneNumber'],
             'name': widget.userData['fullName'],
             'createdAt': FieldValue.serverTimestamp(),
           });
