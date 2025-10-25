@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/bottom_nav_bar.dart';
+import '../widgets/job_details.dart';
+import '../pages/pending_activities.dart';
 
 class BookingsPage extends StatefulWidget {
   const BookingsPage({super.key});
@@ -154,7 +156,20 @@ class _BookingsPageState extends State<BookingsPage> {
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    showJobDetailsModal(
+                      context: context,
+                      jobTitle: booking['service'] ?? '',
+                      jobDescription:
+                          'Service details for ${booking['service']}',
+                      location: 'Bicholim, Goa',
+                      date: booking['scheduledOn'] ?? '',
+                      time: booking['time'] ?? '',
+                      price: booking['amount'] ?? '',
+                      showInterestedButton:
+                          false, // No Interested button in Bookings
+                    );
+                  },
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFF283891),
                     side: const BorderSide(
@@ -249,7 +264,14 @@ class _BookingsPageState extends State<BookingsPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_outlined, color: Colors.black),
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const PendingActivitiesPage(),
+                ),
+              );
+            },
           ),
         ],
         title: const Text(

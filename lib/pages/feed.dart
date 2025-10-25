@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/bottom_nav_bar.dart';
+import '../widgets/job_details.dart';
+import '../pages/pending_activities.dart';
 
 class FeedPage extends StatefulWidget {
   const FeedPage({super.key});
@@ -59,74 +61,89 @@ class _FeedPageState extends State<FeedPage> {
   }
 
   Widget _buildJobCard(Map<String, String> job) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[300]!),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            job['title']!,
-            style: const TextStyle(
-              fontFamily: 'Axiforma',
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
+    return GestureDetector(
+      onTap: () {
+        // Show job details modal from reusable widget
+        showJobDetailsModal(
+          context: context,
+          jobTitle: job['title'] ?? '',
+          jobDescription: job['description'] ?? '',
+          location: 'Bicholim, Goa',
+          date: job['date'] ?? '',
+          time: job['time'] ?? '',
+          price: '₹800',
+          showInterestedButton: true, // Show Interested button in Feed
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey[300]!),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              job['title']!,
+              style: const TextStyle(
+                fontFamily: 'Axiforma',
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              const Text(
-                'Date: ',
-                style: TextStyle(
-                  fontFamily: 'Axiforma',
-                  fontSize: 13,
-                  color: Colors.black54,
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Text(
+                  'Date: ',
+                  style: TextStyle(
+                    fontFamily: 'Axiforma',
+                    fontSize: 13,
+                    color: Colors.black54,
+                  ),
                 ),
-              ),
-              Text(
-                job['date']!,
-                style: const TextStyle(
-                  fontFamily: 'Axiforma',
-                  fontSize: 13,
-                  color: Colors.black87,
+                Text(
+                  job['date']!,
+                  style: const TextStyle(
+                    fontFamily: 'Axiforma',
+                    fontSize: 13,
+                    color: Colors.black87,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 16),
-              const Text(
-                'Time: ',
-                style: TextStyle(
-                  fontFamily: 'Axiforma',
-                  fontSize: 13,
-                  color: Colors.black54,
+                const SizedBox(width: 16),
+                const Text(
+                  'Time: ',
+                  style: TextStyle(
+                    fontFamily: 'Axiforma',
+                    fontSize: 13,
+                    color: Colors.black54,
+                  ),
                 ),
-              ),
-              Text(
-                job['time']!,
-                style: const TextStyle(
-                  fontFamily: 'Axiforma',
-                  fontSize: 13,
-                  color: Colors.black87,
+                Text(
+                  job['time']!,
+                  style: const TextStyle(
+                    fontFamily: 'Axiforma',
+                    fontSize: 13,
+                    color: Colors.black87,
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            job['description']!,
-            style: const TextStyle(
-              fontFamily: 'Axiforma',
-              fontSize: 13,
-              color: Colors.black54,
+              ],
             ),
-          ),
-        ],
+            const SizedBox(height: 4),
+            Text(
+              job['description']!,
+              style: const TextStyle(
+                fontFamily: 'Axiforma',
+                fontSize: 13,
+                color: Colors.black54,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -143,7 +160,14 @@ class _FeedPageState extends State<FeedPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_outlined, color: Colors.black),
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const PendingActivitiesPage(),
+                ),
+              );
+            },
           ),
         ],
       ),
