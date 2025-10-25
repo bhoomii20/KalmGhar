@@ -21,6 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  String _userType = 'Employer'; // Default value
   bool _isLoading = false;
 
   @override
@@ -57,6 +58,7 @@ class _LoginScreenState extends State<LoginScreen> {
           .collection('users')
           .where('username', isEqualTo: _usernameController.text.trim())
           .where('phone', isEqualTo: _mobileController.text.trim())
+          .where('userType', isEqualTo: _userType)
           .get();
 
       return querySnapshot.docs.isNotEmpty;
@@ -208,7 +210,62 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
 
-              const SizedBox(height: 40),
+              const SizedBox(height: 24),
+
+              // User Type Selection
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.work_outline, color: Colors.grey),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _userType,
+                          isExpanded: true,
+                          icon: const Icon(
+                            Icons.arrow_drop_down,
+                            color: Color(0xFF283891),
+                          ),
+                          style: const TextStyle(
+                            fontFamily: 'Axiforma',
+                            fontSize: 14,
+                            color: Colors.black87,
+                          ),
+                          items: const [
+                            DropdownMenuItem(
+                              value: 'Employer',
+                              child: Text('Employer'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'Employee',
+                              child: Text('Employee'),
+                            ),
+                          ],
+                          onChanged: (String? newValue) {
+                            if (newValue != null) {
+                              setState(() {
+                                _userType = newValue;
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 24),
 
               // Username field
               TextField(
