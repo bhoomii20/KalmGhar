@@ -1,8 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../widgets/bottom_nav_bar.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  int _currentIndex = 0;
 
   Widget _sectionTitle(String title, {VoidCallback? onSeeAll}) {
     return Padding(
@@ -162,58 +170,7 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        currentIndex: 0, // Home is selected by default
-        selectedItemColor: Colors.deepPurple,
-        unselectedItemColor: Colors.grey,
-        showUnselectedLabels: true,
-        selectedLabelStyle: const TextStyle(
-          fontFamily: 'Axiforma',
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-        ),
-        unselectedLabelStyle: const TextStyle(
-          fontFamily: 'Axiforma',
-          fontSize: 12,
-        ),
-        items: [
-          BottomNavigationBarItem(
-            icon: SvgPicture.asset(
-              'assets/icons/home.svg',
-              height: 24,
-              color: Colors.deepPurple,
-            ),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: SvgPicture.asset(
-              'assets/icons/booking.svg',
-              height: 24,
-              color: Colors.grey,
-            ),
-            label: 'Bookings',
-          ),
-          BottomNavigationBarItem(
-            icon: SvgPicture.asset(
-              'assets/icons/feed.svg',
-              height: 24,
-              color: Colors.grey,
-            ),
-            label: 'Feed',
-          ),
-          BottomNavigationBarItem(
-            icon: SvgPicture.asset(
-              'assets/icons/account.svg',
-              height: 24,
-              color: Colors.grey,
-            ),
-            label: 'Account',
-          ),
-        ],
-      ),
-
+      bottomNavigationBar: const CustomBottomNavBar(currentIndex: 0),
       body: SafeArea(
         child: ListView(
           children: [
@@ -231,11 +188,7 @@ class HomePage extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  SvgPicture.asset(
-                    'assets/icons/noti.svg',
-                    height: 26,
-                    color: Colors.black, // or any visible color
-                  ),
+                  SvgPicture.asset('assets/icons/noti.svg', height: 26),
                 ],
               ),
             ),
