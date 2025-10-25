@@ -1,10 +1,13 @@
 // Save this as: lib/pages/login.dart
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'home.dart';
 import 'roles.dart';
+import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-// Main Login Screen (Screen 1)
+// Main Login Screen (Screen 1) - Updated with Firebase Authentication
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -15,12 +18,137 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _mobileController = TextEditingController();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  bool _isLoading = false;
 
   @override
   void dispose() {
     _usernameController.dispose();
     _mobileController.dispose();
     super.dispose();
+  }
+
+  // Validate inputs
+  bool _validateInputs() {
+    if (_usernameController.text.trim().isEmpty) {
+      showSnackBar(context, 'Please enter your username');
+      return false;
+    }
+
+    if (_mobileController.text.trim().isEmpty) {
+      showSnackBar(context, 'Please enter your mobile number');
+      return false;
+    }
+
+    if (_mobileController.text.trim().length != 10) {
+      showSnackBar(context, 'Please enter a valid 10-digit mobile number');
+      return false;
+    }
+
+    return true;
+  }
+
+  // Check if user exists in Firestore
+  Future<bool> _checkUserExists() async {
+    try {
+      final querySnapshot = await _firestore
+          .collection('users')
+          .where('username', isEqualTo: _usernameController.text.trim())
+          .where('phone', isEqualTo: _mobileController.text.trim())
+          .get();
+
+      return querySnapshot.docs.isNotEmpty;
+    } catch (e) {
+      showSnackBar(context, 'Error checking user: $e');
+      return false;
+    }
+  }
+
+  // Initiate Firebase Phone Authentication
+  Future<void> initiateLoginAuth() async {
+    // Validate inputs first
+    if (!_validateInputs()) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    // Check if user exists
+    bool userExists = await _checkUserExists();
+
+    if (!userExists) {
+      setState(() {
+        _isLoading = false;
+      });
+      showSnackBar(context, 'User not found. Please sign up first.');
+      return;
+    }
+
+    try {
+      String phoneNumber = '+91${_mobileController.text.trim()}';
+
+      await _auth.verifyPhoneNumber(
+        phoneNumber: phoneNumber,
+        verificationCompleted: (PhoneAuthCredential credential) async {
+          // Auto-verification (Android only)
+          try {
+            await _auth.signInWithCredential(credential);
+            if (mounted) {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => const HomePage()),
+                (route) => false,
+              );
+            }
+          } catch (e) {
+            showSnackBar(context, 'Auto-verification failed: $e');
+          }
+        },
+        verificationFailed: (FirebaseAuthException e) {
+          setState(() {
+            _isLoading = false;
+          });
+          showSnackBar(context, e.message ?? 'Verification failed');
+        },
+        codeSent: (String verificationId, int? resendToken) {
+          setState(() {
+            _isLoading = false;
+          });
+
+          // Navigate to OTP screen with verification ID
+          if (mounted) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => OTPVerificationScreen(
+                  phoneNumber: _mobileController.text.trim(),
+                ),
+              ),
+            );
+          }
+        },
+        codeAutoRetrievalTimeout: (String verificationId) {
+          print('Auto retrieval timeout');
+        },
+        timeout: const Duration(seconds: 60),
+      );
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      showSnackBar(context, 'Error: $e');
+    }
+  }
+
+  // Show error/success messages
+  void showSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
   }
 
   @override
@@ -110,16 +238,18 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 16),
 
-              // Mobile number field
+              // Mobile number field with validation
               TextField(
                 controller: _mobileController,
                 keyboardType: TextInputType.phone,
+                maxLength: 10,
                 decoration: InputDecoration(
                   prefixIcon: const Icon(
                     Icons.phone_outlined,
                     color: Colors.grey,
                   ),
                   hintText: 'Enter your mobile number',
+                  counterText: '',
                   hintStyle: const TextStyle(
                     fontFamily: 'Axiforma',
                     color: Colors.grey,
@@ -139,37 +269,38 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 24),
 
-              // Get OTP button
+              // Get OTP button with loading state
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => OTPVerificationScreen(
-                          phoneNumber: _mobileController.text,
-                        ),
-                      ),
-                    );
-                  },
+                  onPressed: _isLoading ? null : initiateLoginAuth,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF283891),
                     foregroundColor: Colors.white,
+                    disabledBackgroundColor: Colors.grey[400],
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     elevation: 0,
                   ),
-                  child: const Text(
-                    'Get OTP',
-                    style: TextStyle(
-                      fontFamily: 'Axiforma',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text(
+                          'Get OTP',
+                          style: TextStyle(
+                            fontFamily: 'Axiforma',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                 ),
               ),
 
@@ -451,7 +582,8 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
   }
 }
 
-// Sign Up Screen (Screen 3)
+// Screen 3 - Sign Up Screen with Phone Authentication
+
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
 
@@ -464,7 +596,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController _fullNameController = TextEditingController();
   final TextEditingController _mobileController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
   bool _acceptTerms = false;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -473,6 +609,142 @@ class _SignUpScreenState extends State<SignUpScreen> {
     _mobileController.dispose();
     _emailController.dispose();
     super.dispose();
+  }
+
+  Future<void> initiatePhoneAuth() async {
+    // Use this only during development/testing.
+    await FirebaseAuth.instance.setSettings(
+      appVerificationDisabledForTesting: true,
+    );
+
+    // Now proceed with verifyPhoneNumber or other auth calls.
+    // Validate inputs
+    if (_usernameController.text.trim().isEmpty ||
+        _fullNameController.text.trim().isEmpty ||
+        _mobileController.text.trim().isEmpty ||
+        _emailController.text.trim().isEmpty) {
+      showSnackBar(context, 'Please fill all fields');
+      return;
+    }
+
+    if (_mobileController.text.trim().length != 10) {
+      showSnackBar(context, 'Please enter a valid 10-digit mobile number');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      String phoneNumber = '+91${_mobileController.text.trim()}';
+
+      await _auth.verifyPhoneNumber(
+        phoneNumber: phoneNumber,
+        verificationCompleted: (PhoneAuthCredential credential) async {
+          // Auto-verification (Android only)
+          try {
+            await _auth.signInWithCredential(credential);
+
+            // FIXED: Now saving user data during auto-verification
+            await saveUserData();
+
+            if (mounted) {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ChooseRoleScreen(
+                    userName: _fullNameController.text.trim(),
+                  ),
+                ),
+                (route) => false,
+              );
+            }
+          } catch (e) {
+            showSnackBar(context, 'Auto-verification failed: $e');
+            setState(() {
+              _isLoading = false;
+            });
+          }
+        },
+        verificationFailed: (FirebaseAuthException e) {
+          setState(() {
+            _isLoading = false;
+          });
+          showSnackBar(context, e.message ?? 'Verification failed');
+        },
+        codeSent: (String verificationId, int? resendToken) async {
+          setState(() {
+            _isLoading = false;
+          });
+
+          // Navigate to OTP screen
+          if (mounted) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => SignUpOTPScreen(
+                  phoneNumber: _mobileController.text.trim(),
+                  verificationId: verificationId,
+                  userData: {
+                    'username': _usernameController.text.trim(),
+                    'fullName': _fullNameController.text.trim(),
+                    'email': _emailController.text.trim(),
+                    'phoneNumber': _mobileController.text.trim(),
+                  },
+                ),
+              ),
+            );
+          }
+        },
+        codeAutoRetrievalTimeout: (String verificationId) {
+          print('Auto retrieval timeout');
+        },
+        timeout: const Duration(seconds: 60),
+      );
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      showSnackBar(context, 'Error: $e');
+    }
+  }
+
+  Future<void> saveUserData() async {
+    try {
+      // Get the current user's UID from Firebase Auth
+      String? uid = _auth.currentUser?.uid;
+
+      if (uid == null) {
+        throw Exception('User not authenticated');
+      }
+
+      // Save user data to Firestore using UID as document ID
+      await _firestore
+          .collection('users')
+          .doc(_usernameController.text.trim())
+          .set({
+            'username': _usernameController.text.trim(),
+            'email': _emailController.text.trim(),
+            'phoneNumber': _mobileController.text.trim(),
+            'fullName': _fullNameController.text.trim(),
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+
+      print('User data saved successfully');
+    } catch (e) {
+      print('Error saving user data: $e');
+      // Optionally show error to user
+      if (mounted) {
+        showSnackBar(context, 'Warning: Could not save user data');
+      }
+    }
+  }
+
+  void showSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
   }
 
   @override
@@ -494,13 +766,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
             child: Column(
               children: [
                 const SizedBox(height: 20),
-
-                // Logo
                 Image.asset('assets/images/ghar.png', height: 120),
-
                 const SizedBox(height: 30),
-
-                // Welcome text
                 const Text(
                   'Welcome to',
                   style: TextStyle(
@@ -509,9 +776,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     color: Colors.black87,
                   ),
                 ),
-
                 const SizedBox(height: 8),
-
                 const Text(
                   'KalmGhar',
                   style: TextStyle(
@@ -521,7 +786,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     color: Color(0xFF283891),
                   ),
                 ),
-
                 const SizedBox(height: 40),
 
                 // Username field
@@ -550,7 +814,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 12),
 
                 // Full name field
@@ -579,19 +842,20 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 12),
 
                 // Mobile number field
                 TextField(
                   controller: _mobileController,
                   keyboardType: TextInputType.phone,
+                  maxLength: 10,
                   decoration: InputDecoration(
                     prefixIcon: const Icon(
                       Icons.phone_outlined,
                       color: Colors.grey,
                     ),
                     hintText: 'Enter your mobile number',
+                    counterText: '',
                     hintStyle: const TextStyle(
                       fontFamily: 'Axiforma',
                       color: Colors.grey,
@@ -609,7 +873,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 12),
 
                 // Email field
@@ -639,7 +902,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 16),
 
                 // Terms and conditions checkbox
@@ -686,24 +948,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 24),
 
                 // Create account button
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: _acceptTerms
-                        ? () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => SignUpOTPScreen(
-                                  phoneNumber: _mobileController.text,
-                                ),
-                              ),
-                            );
-                          }
+                    onPressed: (_acceptTerms && !_isLoading)
+                        ? initiatePhoneAuth
                         : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF283891),
@@ -715,20 +967,27 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       ),
                       elevation: 0,
                     ),
-                    child: const Text(
-                      'Create an Account',
-                      style: TextStyle(
-                        fontFamily: 'Axiforma',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Text(
+                            'Create an Account',
+                            style: TextStyle(
+                              fontFamily: 'Axiforma',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                   ),
                 ),
-
                 const SizedBox(height: 16),
 
-                // Already a user
                 const Text(
                   'Already a user ?',
                   style: TextStyle(
@@ -737,15 +996,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     color: Colors.black54,
                   ),
                 ),
-
                 const SizedBox(height: 12),
 
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
+                    onPressed: () => Navigator.pop(context),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: const Color(0xFF283891),
                       side: const BorderSide(
@@ -767,7 +1023,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 30),
               ],
             ),
@@ -778,11 +1033,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 }
 
-// Sign Up OTP Verification Screen (Screen 4)
+// Screen 4 - Sign Up OTP Verification Screen (6-digit)
 class SignUpOTPScreen extends StatefulWidget {
   final String phoneNumber;
+  final String verificationId;
+  final Map<String, String> userData;
 
-  const SignUpOTPScreen({super.key, required this.phoneNumber});
+  const SignUpOTPScreen({
+    super.key,
+    required this.phoneNumber,
+    required this.verificationId,
+    required this.userData,
+  });
 
   @override
   State<SignUpOTPScreen> createState() => _SignUpOTPScreenState();
@@ -794,9 +1056,20 @@ class _SignUpOTPScreenState extends State<SignUpOTPScreen> {
     (_) => TextEditingController(),
   );
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  bool _isVerifying = false;
+  int _remainingSeconds = 120;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    startTimer();
+  }
 
   @override
   void dispose() {
+    _timer?.cancel();
     for (var controller in _otpControllers) {
       controller.dispose();
     }
@@ -804,6 +1077,117 @@ class _SignUpOTPScreenState extends State<SignUpOTPScreen> {
       node.dispose();
     }
     super.dispose();
+  }
+
+  void startTimer() {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_remainingSeconds > 0) {
+        setState(() {
+          _remainingSeconds--;
+        });
+      } else {
+        timer.cancel();
+      }
+    });
+  }
+
+  String getOTP() {
+    return _otpControllers.map((controller) => controller.text).join();
+  }
+
+  Future<void> verifyOTP() async {
+    setState(() {
+      _isVerifying = true;
+    });
+
+    try {
+      String smsCode = getOTP();
+
+      if (smsCode.length != 6) {
+        showSnackBar(context, 'Please enter complete 6-digit OTP');
+        setState(() {
+          _isVerifying = false;
+        });
+        return;
+      }
+
+      PhoneAuthCredential credential = PhoneAuthProvider.credential(
+        verificationId: widget.verificationId,
+        smsCode: smsCode,
+      );
+
+      await _auth.signInWithCredential(credential);
+
+      // Save user data after successful authentication
+      await saveUserData();
+
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const ChooseRoleScreen(userName: 'User'),
+          ),
+          (route) => false,
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      showSnackBar(context, e.message ?? 'Invalid OTP');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isVerifying = false;
+        });
+      }
+    }
+  }
+
+  Future<void> saveUserData() async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.userData['username'])
+          .set({
+            'email': widget.userData['email'],
+            'username': widget.userData['username'],
+            'phone': widget.userData['phoneNumber'],
+            'name': widget.userData['fullName'],
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+    } catch (e) {
+      print('Error saving user data: $e');
+    }
+  }
+
+  Future<void> resendOTP() async {
+    if (_remainingSeconds > 0) return;
+
+    setState(() {
+      _remainingSeconds = 120;
+    });
+    startTimer();
+
+    try {
+      await _auth.verifyPhoneNumber(
+        phoneNumber: '+91${widget.phoneNumber}',
+        verificationCompleted: (PhoneAuthCredential credential) {},
+        verificationFailed: (FirebaseAuthException e) {
+          showSnackBar(context, e.message ?? 'Failed to resend OTP');
+        },
+        codeSent: (String verificationId, int? resendToken) {
+          showSnackBar(context, 'OTP sent successfully');
+        },
+        codeAutoRetrievalTimeout: (String verificationId) {},
+        timeout: const Duration(seconds: 60),
+      );
+    } catch (e) {
+      showSnackBar(context, 'Error resending OTP');
+    }
+  }
+
+  void showSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -824,13 +1208,8 @@ class _SignUpOTPScreenState extends State<SignUpOTPScreen> {
           child: Column(
             children: [
               const SizedBox(height: 20),
-
-              // Logo
               Image.asset('assets/images/ghar.png', height: 120),
-
               const SizedBox(height: 30),
-
-              // Welcome text
               const Text(
                 'Welcome back to',
                 style: TextStyle(
@@ -839,9 +1218,7 @@ class _SignUpOTPScreenState extends State<SignUpOTPScreen> {
                   color: Colors.black87,
                 ),
               ),
-
               const SizedBox(height: 8),
-
               const Text(
                 'KalmGhar',
                 style: TextStyle(
@@ -851,9 +1228,7 @@ class _SignUpOTPScreenState extends State<SignUpOTPScreen> {
                   color: Color(0xFF283891),
                 ),
               ),
-
               const SizedBox(height: 40),
-
               const Text(
                 'Verification code',
                 style: TextStyle(
@@ -863,9 +1238,7 @@ class _SignUpOTPScreenState extends State<SignUpOTPScreen> {
                   color: Colors.black87,
                 ),
               ),
-
               const SizedBox(height: 12),
-
               Text(
                 'A 6 digit code has been sent to +91 ${widget.phoneNumber}',
                 textAlign: TextAlign.center,
@@ -875,10 +1248,9 @@ class _SignUpOTPScreenState extends State<SignUpOTPScreen> {
                   color: Colors.black54,
                 ),
               ),
-
               const SizedBox(height: 32),
 
-              // OTP Input boxes
+              // OTP Input boxes (6 digits)
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(6, (index) {
@@ -886,6 +1258,7 @@ class _SignUpOTPScreenState extends State<SignUpOTPScreen> {
                     width: 50,
                     height: 50,
                     margin: const EdgeInsets.symmetric(horizontal: 8),
+
                     child: TextField(
                       controller: _otpControllers[index],
                       focusNode: _focusNodes[index],
@@ -910,7 +1283,7 @@ class _SignUpOTPScreenState extends State<SignUpOTPScreen> {
                         ),
                       ),
                       onChanged: (value) {
-                        if (value.length == 1 && index < 3) {
+                        if (value.length == 1 && index < 5) {
                           _focusNodes[index + 1].requestFocus();
                         } else if (value.isEmpty && index > 0) {
                           _focusNodes[index - 1].requestFocus();
@@ -920,44 +1293,42 @@ class _SignUpOTPScreenState extends State<SignUpOTPScreen> {
                   );
                 }),
               ),
-
               const SizedBox(height: 32),
 
               // Verify button
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    // Navigate to home after verification
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            const ChooseRoleScreen(userName: 'User'),
-                      ),
-                      (route) => false,
-                    );
-                  },
+                  onPressed: _isVerifying ? null : verifyOTP,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF283891),
                     foregroundColor: Colors.white,
+                    disabledBackgroundColor: Colors.grey[400],
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     elevation: 0,
                   ),
-                  child: const Text(
-                    'Verify',
-                    style: TextStyle(
-                      fontFamily: 'Axiforma',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  child: _isVerifying
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text(
+                          'Verify',
+                          style: TextStyle(
+                            fontFamily: 'Axiforma',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                 ),
               ),
-
               const SizedBox(height: 16),
 
               // Resend code and timer
@@ -965,19 +1336,21 @@ class _SignUpOTPScreenState extends State<SignUpOTPScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   TextButton(
-                    onPressed: () {},
-                    child: const Text(
+                    onPressed: _remainingSeconds == 0 ? resendOTP : null,
+                    child: Text(
                       'Resend Code',
                       style: TextStyle(
                         fontFamily: 'Axiforma',
                         fontSize: 14,
-                        color: Color(0xFF283891),
+                        color: _remainingSeconds == 0
+                            ? const Color(0xFF283891)
+                            : Colors.grey,
                       ),
                     ),
                   ),
-                  const Text(
-                    '120 min left',
-                    style: TextStyle(
+                  Text(
+                    '${(_remainingSeconds ~/ 60).toString().padLeft(2, '0')}:${(_remainingSeconds % 60).toString().padLeft(2, '0')} left',
+                    style: const TextStyle(
                       fontFamily: 'Axiforma',
                       fontSize: 14,
                       color: Colors.black54,
@@ -985,7 +1358,6 @@ class _SignUpOTPScreenState extends State<SignUpOTPScreen> {
                   ),
                 ],
               ),
-
               const Spacer(),
             ],
           ),
