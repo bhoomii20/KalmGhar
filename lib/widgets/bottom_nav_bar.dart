@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../pages/home.dart';
 import '../pages/bookings.dart';
+import '../pages/feed.dart';
 
 class CustomBottomNavBar extends StatelessWidget {
   final int currentIndex;
@@ -43,7 +44,14 @@ class CustomBottomNavBar extends StatelessWidget {
               (route) => false,
             );
             break;
-          // Add cases for Feed and Account when ready
+          case 2:
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => const FeedPage()),
+              (route) => false,
+            );
+            break;
+          // Add case for Account when ready
         }
       },
       items: [
