@@ -1182,7 +1182,7 @@ class _SignUpOTPScreenState extends State<SignUpOTPScreen> {
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(
-            builder: (context) => const ChooseRoleScreen(userName: 'User'),
+            builder: (context) => const ChooseRoleScreen(userName: 'username'),
           ),
           (route) => false,
         );

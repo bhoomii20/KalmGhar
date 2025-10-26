@@ -1,6 +1,9 @@
+import '../pages/feedback_review.dart';
 import 'package:flutter/material.dart';
 import '../widgets/bottom_nav_bar.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../widgets/job_details.dart';
+import '../pages/pending_activities.dart';
 
 class BookingsPage extends StatefulWidget {
   const BookingsPage({super.key});
@@ -230,7 +233,20 @@ Stream<List<Map<String, dynamic>>> fetchBookings() {
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    showJobDetailsModal(
+                      context: context,
+                      jobTitle: booking['service'] ?? '',
+                      jobDescription:
+                          'Service details for ${booking['service']}',
+                      location: 'Bicholim, Goa',
+                      date: booking['scheduledOn'] ?? '',
+                      time: booking['time'] ?? '',
+                      price: booking['amount'] ?? '',
+                      showInterestedButton:
+                          false, // No Interested button in Bookings
+                    );
+                  },
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFF283891),
                     side: const BorderSide(
@@ -256,7 +272,18 @@ Stream<List<Map<String, dynamic>>> fetchBookings() {
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => GiveFeedbackPage(
+                            serviceName: booking['service'],
+                            employeeName:
+                                'Employee Name', // Replace with actual employee name
+                          ),
+                        ),
+                      );
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF283891),
                       foregroundColor: Colors.white,
@@ -325,7 +352,14 @@ Stream<List<Map<String, dynamic>>> fetchBookings() {
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_outlined, color: Colors.black),
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const PendingActivitiesPage(),
+                ),
+              );
+            },
           ),
         ],
         title: const Text(

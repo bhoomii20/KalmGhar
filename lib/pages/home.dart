@@ -1,6 +1,9 @@
+// Updated lib/pages/home.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../widgets/bottom_nav_bar.dart';
+import '../pages/feed.dart';
+import '../pages/pending_activities.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -10,7 +13,14 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  int _currentIndex = 0;
+  void _navigateToFeed(String category) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FeedPage(filterCategory: category),
+      ),
+    );
+  }
 
   Widget _sectionTitle(String title, {VoidCallback? onSeeAll}) {
     return Padding(
@@ -53,115 +63,183 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _iconLabel(String assetName, String label, Color bgColor) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          height: 56,
-          width: 56,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: bgColor.withOpacity(0.15),
-          ),
-          child: Center(
-            child: SvgPicture.asset(
-              'assets/icons/$assetName',
-              height: 32,
-              width: 32,
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        SizedBox(
-          width: 65,
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            style: const TextStyle(
-              fontFamily: 'Axiforma',
-              fontSize: 11,
-              height: 1.2,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+  Widget _iconLabel(
+    String assetName,
+    String label, [
+    Color? bgColor,
+    String? category,
+  ]) {
+    // bgColor and category are optional to preserve older 2-arg calls.
+    final useCategory = category ?? label;
+    final isPng =
+        assetName.toLowerCase().endsWith('.png') ||
+        assetName.contains('assets/images');
 
-  Widget _categoryCircle(Color color, String label) {
-    return Column(
-      children: [
-        Container(
-          height: 80,
-          width: 80,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: color.withOpacity(0.3),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          label,
-          style: const TextStyle(
-            fontFamily: 'Axiforma',
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _popularCard(String title, String subtitle, double rating) {
-    return Container(
-      width: 200,
-      margin: const EdgeInsets.only(right: 16),
+    return GestureDetector(
+      onTap: () => _navigateToFeed(useCategory),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            height: 140,
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(16),
+            height: 56,
+            width: 56,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.transparent,
+            ),
+            child: ClipOval(
+              child: isPng
+                  ? Image.asset(
+                      assetName.startsWith('assets/')
+                          ? assetName
+                          : 'assets/images/${assetName.split('/').last}',
+                      height: 56,
+                      width: 56,
+                      fit: BoxFit.cover,
+                    )
+                  : Center(child: _getIconWidget(assetName)),
             ),
           ),
-          const SizedBox(height: 10),
-          Text(
-            title,
-            style: const TextStyle(
-              fontFamily: 'Axiforma',
-              fontWeight: FontWeight.bold,
-              fontSize: 15,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            subtitle,
-            style: const TextStyle(
-              fontFamily: 'Axiforma',
-              color: Colors.black54,
-              fontSize: 13,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              const Icon(Icons.star, size: 14, color: Colors.amber),
-              const SizedBox(width: 4),
-              Text(
-                rating.toString(),
-                style: const TextStyle(
-                  fontFamily: 'Axiforma',
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: 65,
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              style: const TextStyle(
+                fontFamily: 'Axiforma',
+                fontSize: 11,
+                height: 1.2,
               ),
-            ],
+            ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _getIconWidget(String assetName) {
+    final fileName = assetName.split('/').last;
+    final pngNames = {'cleaning.png', 'washing.png', 'spa.png', 'repair.png'};
+    if (assetName.endsWith('.png') || pngNames.contains(fileName)) {
+      final path = assetName.startsWith('assets/')
+          ? assetName
+          : 'assets/images/$fileName';
+      return Image.asset(path, height: 32, width: 32);
+    }
+    return SvgPicture.asset(
+      assetName.startsWith('assets/') ? assetName : 'assets/icons/$assetName',
+      height: 32,
+      width: 32,
+    );
+  }
+
+  Widget _categoryCircle(Color color, String label, String category) {
+    return GestureDetector(
+      onTap: () => _navigateToFeed(category),
+      child: Column(
+        children: [
+          Container(
+            height: 80,
+            width: 80,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: color.withOpacity(0.3),
+            ),
+            child: Icon(
+              _getCategoryIcon(category),
+              size: 40,
+              color: color.withOpacity(0.8),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: const TextStyle(
+              fontFamily: 'Axiforma',
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _getCategoryIcon(String category) {
+    switch (category.toLowerCase()) {
+      case 'plumbing':
+        return Icons.plumbing;
+      case 'electrician':
+        return Icons.electrical_services;
+      case 'house help':
+        return Icons.cleaning_services;
+      default:
+        return Icons.work;
+    }
+  }
+
+  Widget _popularCard(
+    String title,
+    String subtitle,
+    double rating,
+    String imagePath,
+  ) {
+    return GestureDetector(
+      onTap: () => _navigateToFeed(title),
+      child: Container(
+        width: 200,
+        margin: const EdgeInsets.only(right: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              height: 140,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(16),
+                image: DecorationImage(
+                  image: AssetImage(imagePath),
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              title,
+              style: const TextStyle(
+                fontFamily: 'Axiforma',
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              subtitle,
+              style: const TextStyle(
+                fontFamily: 'Axiforma',
+                color: Colors.black54,
+                fontSize: 13,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                const Icon(Icons.star, size: 14, color: Colors.amber),
+                const SizedBox(width: 4),
+                Text(
+                  rating.toString(),
+                  style: const TextStyle(
+                    fontFamily: 'Axiforma',
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -188,7 +266,20 @@ class _HomePageState extends State<HomePage> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  SvgPicture.asset('assets/icons/noti.svg', height: 26),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const PendingActivitiesPage(),
+                        ),
+                      );
+                    },
+                    child: SvgPicture.asset(
+                      'assets/icons/noti.svg',
+                      height: 26,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -197,6 +288,8 @@ class _HomePageState extends State<HomePage> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: TextField(
+                onTap: () => _navigateToFeed('all'),
+                readOnly: true,
                 decoration: InputDecoration(
                   prefixIcon: const Icon(Icons.search, color: Colors.grey),
                   hintText: 'Search service',
@@ -227,11 +320,11 @@ class _HomePageState extends State<HomePage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _iconLabel('cook.svg', 'Need a cook', Colors.blue),
-                  _iconLabel('spa.svg', 'Spa', Colors.blue),
-                  _iconLabel('helper.svg', 'Household helper', Colors.orange),
-                  _iconLabel('cleaning.svg', 'Cleaning', Colors.blue),
-                  _iconLabel('garden.svg', 'Gardening', Colors.blue),
+                  _iconLabel('assets/images/cook.png', 'Need a cook'),
+                  _iconLabel('assets/images/plumbing.png', 'Spa'),
+                  _iconLabel('assets/images/helper.png', 'Household helper'),
+                  _iconLabel('assets/images/washing.png', 'Cleaning'),
+                  _iconLabel('assets/images/electrician.png', 'Electrician'),
                 ],
               ),
             ),
@@ -246,14 +339,18 @@ class _HomePageState extends State<HomePage> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   _iconLabel(
-                    'plumbing.svg',
+                    'assets/images/plumbing.png',
                     'Electrical Plumbing',
-                    Colors.blue,
                   ),
-                  _iconLabel('water.svg', 'Water Repairs', Colors.blue),
-                  _iconLabel('repairs.svg', 'Home repairs', Colors.orange),
-                  _iconLabel('cleanhome.svg', 'Home Cleaning', Colors.green),
-                  _iconLabel('washing.svg', 'Washing', Colors.blue),
+                  _iconLabel('assets/images/spa.png', 'Spa'),
+                  _iconLabel(
+                    'assets/images/repair.png',
+                    'Home repairs',
+                    Colors.orange,
+                    'Home Repairs',
+                  ),
+                  _iconLabel('assets/images/cleaning.png', 'Home Cleaning'),
+                  _iconLabel('assets/images/washing.png', 'Washing'),
                 ],
               ),
             ),
@@ -261,15 +358,30 @@ class _HomePageState extends State<HomePage> {
             const SizedBox(height: 8),
 
             // Top Categories
-            _sectionTitle('Top Categories', onSeeAll: () {}),
+            _sectionTitle(
+              'Top Categories',
+              onSeeAll: () => _navigateToFeed('all'),
+            ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _categoryCircle(const Color(0xFF6DAFEF), 'Plumbing'),
-                  _categoryCircle(const Color(0xFFFFB84D), 'Electrician'),
-                  _categoryCircle(const Color(0xFFFF8FAB), 'House Help'),
+                  _categoryCircle(
+                    const Color(0xFF6DAFEF),
+                    'Plumbing',
+                    'Plumbing',
+                  ),
+                  _categoryCircle(
+                    const Color(0xFFFFB84D),
+                    'Electrician',
+                    'Electrician',
+                  ),
+                  _categoryCircle(
+                    const Color(0xFFFF8FAB),
+                    'House Help',
+                    'House Help',
+                  ),
                 ],
               ),
             ),
@@ -277,15 +389,34 @@ class _HomePageState extends State<HomePage> {
             const SizedBox(height: 8),
 
             // Popular near you
-            _sectionTitle('Popular near you', onSeeAll: () {}),
+            _sectionTitle(
+              'Popular near you',
+              onSeeAll: () => _navigateToFeed('all'),
+            ),
             SizedBox(
               height: 230,
               child: ListView(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 children: [
-                  _popularCard('Need for a cook', 'Breakfast and Tiffin', 4.1),
-                  _popularCard('Electrician', 'Basic Home Service', 4.1),
+                  _popularCard(
+                    'Need for a cook',
+                    'Breakfast and Tiffin',
+                    4.1,
+                    'assets/images/professional-cook.jpg',
+                  ),
+                  _popularCard(
+                    'Electrician',
+                    'Basic Home Service',
+                    4.1,
+                    'assets/images/electrician_serv.jpg',
+                  ),
+                  _popularCard(
+                    'Plumbing',
+                    'Water & Pipe Repairs',
+                    4.3,
+                    'assets/images/plumbing.png',
+                  ),
                 ],
               ),
             ),

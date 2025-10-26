@@ -1,12 +1,52 @@
 // Save this as: lib/pages/role_setup.dart
 import 'package:flutter/material.dart';
 import 'home.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 // Screen 1: Choose Role
 class ChooseRoleScreen extends StatelessWidget {
   final String userName;
 
   const ChooseRoleScreen({super.key, required this.userName});
+
+  Future<void> _updateUserRole(BuildContext context, String role) async {
+    try {
+      // Update the user's role in Firestore
+      await FirebaseFirestore.instance.collection('users').doc(userName).set({
+        'role': role, // 'employee' or 'employer'
+        'userName': userName,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      // Navigate to the appropriate screen based on role
+      if (!context.mounted) return;
+
+      if (role == 'employee') {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => JobSeekerProfileScreen(userName: userName),
+          ),
+        );
+      } else {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => JobProviderProfileScreen(userName: userName),
+          ),
+        );
+      }
+    } catch (e) {
+      // Handle error
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error saving role: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,6 +81,7 @@ class ChooseRoleScreen extends StatelessWidget {
               // Looking to Hire card
               GestureDetector(
                 onTap: () {
+                  _updateUserRole(context, 'employer');
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -80,6 +121,7 @@ class ChooseRoleScreen extends StatelessWidget {
               // Looking for Work card
               GestureDetector(
                 onTap: () {
+                  _updateUserRole(context, 'employee');
                   Navigator.push(
                     context,
                     MaterialPageRoute(

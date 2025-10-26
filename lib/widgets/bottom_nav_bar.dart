@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../pages/home.dart';
 import '../pages/bookings.dart';
 import '../pages/feed.dart';
+import '../pages/account.dart';
 
 class CustomBottomNavBar extends StatelessWidget {
   final int currentIndex;
@@ -51,7 +52,13 @@ class CustomBottomNavBar extends StatelessWidget {
               (route) => false,
             );
             break;
-          // Add case for Account when ready
+          case 3:
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => const AccountPage()),
+              (route) => false,
+            );
+            break;
         }
       },
       items: [
