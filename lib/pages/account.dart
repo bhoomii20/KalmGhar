@@ -1,3 +1,4 @@
+import '../pages/feedback_review.dart';
 import 'package:flutter/material.dart';
 import '../widgets/bottom_nav_bar.dart';
 import '../pages/login.dart';
@@ -185,7 +186,14 @@ class AccountPage extends StatelessWidget {
             _buildMenuItem(
               icon: Icons.rate_review_outlined,
               title: 'View Reviews',
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ViewReviewsPage(),
+                  ),
+                );
+              },
             ),
 
             _buildMenuItem(

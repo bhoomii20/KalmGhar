@@ -4,7 +4,8 @@ import '../widgets/job_details.dart';
 import '../pages/pending_activities.dart';
 
 class FeedPage extends StatefulWidget {
-  const FeedPage({super.key});
+  final String? filterCategory;
+  const FeedPage({super.key, this.filterCategory});
 
   @override
   State<FeedPage> createState() => _FeedPageState();
@@ -53,6 +54,15 @@ class _FeedPageState extends State<FeedPage> {
       'description': 'Job Description',
     },
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Set search text if category is provided
+    if (widget.filterCategory != null && widget.filterCategory != 'all') {
+      _searchController.text = widget.filterCategory!;
+    }
+  }
 
   @override
   void dispose() {

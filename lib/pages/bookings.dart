@@ -1,3 +1,4 @@
+import '../pages/feedback_review.dart';
 import 'package:flutter/material.dart';
 import '../widgets/bottom_nav_bar.dart';
 import '../widgets/job_details.dart';
@@ -195,7 +196,18 @@ class _BookingsPageState extends State<BookingsPage> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => GiveFeedbackPage(
+                            serviceName: booking['service'],
+                            employeeName:
+                                'Employee Name', // Replace with actual employee name
+                          ),
+                        ),
+                      );
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF283891),
                       foregroundColor: Colors.white,
