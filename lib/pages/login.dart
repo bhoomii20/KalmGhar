@@ -167,7 +167,7 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Column(
             children: [
               const SizedBox(height: 20),
@@ -530,9 +530,9 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(6, (index) {
                   return Container(
-                    width: 50,
-                    height: 50,
-                    margin: const EdgeInsets.symmetric(horizontal: 8),
+                    width: 44,
+                    height: 48,
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
                     child: TextField(
                       controller: _otpControllers[index],
                       focusNode: _focusNodes[index],
@@ -553,7 +553,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
                           borderSide: BorderSide.none,
                         ),
                         contentPadding: const EdgeInsets.symmetric(
-                          vertical: 16,
+                          vertical: 10,
                         ),
                       ),
                       onChanged: (value) {

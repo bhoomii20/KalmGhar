@@ -86,7 +86,7 @@ class ChooseRoleScreen extends StatelessWidget {
                     context,
                     MaterialPageRoute(
                       builder: (context) =>
-                          JobSeekerProfileScreen(userName: userName),
+                          JobProviderProfileScreen(userName: userName),
                     ),
                   );
                 },
@@ -126,7 +126,7 @@ class ChooseRoleScreen extends StatelessWidget {
                     context,
                     MaterialPageRoute(
                       builder: (context) =>
-                          JobProviderProfileScreen(userName: userName),
+                          JobSeekerProfileScreen(userName: userName),
                     ),
                   );
                 },
