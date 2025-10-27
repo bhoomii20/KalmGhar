@@ -1,52 +1,11 @@
-// Save this as: lib/pages/role_setup.dart
 import 'package:flutter/material.dart';
 import 'home.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 // Screen 1: Choose Role
 class ChooseRoleScreen extends StatelessWidget {
   final String userName;
 
   const ChooseRoleScreen({super.key, required this.userName});
-
-  Future<void> _updateUserRole(BuildContext context, String role) async {
-    try {
-      // Update the user's role in Firestore
-      await FirebaseFirestore.instance.collection('users').doc(userName).set({
-        'role': role, // 'employee' or 'employer'
-        'userName': userName,
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-
-      // Navigate to the appropriate screen based on role
-      if (!context.mounted) return;
-
-      if (role == 'employee') {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => JobSeekerProfileScreen(userName: userName),
-          ),
-        );
-      } else {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => JobProviderProfileScreen(userName: userName),
-          ),
-        );
-      }
-    } catch (e) {
-      // Handle error
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error saving role: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -78,10 +37,9 @@ class ChooseRoleScreen extends StatelessWidget {
 
               const SizedBox(height: 60),
 
-              // Looking to Hire card
+              // Looking to Hire card (Job Provider/Employer)
               GestureDetector(
                 onTap: () {
-                  _updateUserRole(context, 'employer');
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -100,10 +58,10 @@ class ChooseRoleScreen extends StatelessWidget {
                   ),
                   child: Column(
                     children: [
-                      Image.asset('assets/images/employee.png', height: 100),
+                      Image.asset('assets/images/employer.png', height: 100),
                       const SizedBox(height: 16),
                       const Text(
-                        'Looking for Work ?',
+                        'Looking to Hire ?',
                         style: TextStyle(
                           fontFamily: 'Axiforma',
                           fontSize: 16,
@@ -118,10 +76,9 @@ class ChooseRoleScreen extends StatelessWidget {
 
               const SizedBox(height: 24),
 
-              // Looking for Work card
+              // Looking for Work card (Job Seeker/Employee)
               GestureDetector(
                 onTap: () {
-                  _updateUserRole(context, 'employee');
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -140,10 +97,10 @@ class ChooseRoleScreen extends StatelessWidget {
                   ),
                   child: Column(
                     children: [
-                      Image.asset('assets/images/employer.png', height: 100),
+                      Image.asset('assets/images/employee.png', height: 100),
                       const SizedBox(height: 16),
                       const Text(
-                        'Looking to Hire ?',
+                        'Looking for Work ?',
                         style: TextStyle(
                           fontFamily: 'Axiforma',
                           fontSize: 16,
@@ -205,7 +162,6 @@ class _JobSeekerProfileScreenState extends State<JobSeekerProfileScreen> {
             child: Column(
               children: [
                 const SizedBox(height: 20),
-
                 Text(
                   'Welcome ${widget.userName}',
                   style: const TextStyle(
@@ -215,14 +171,9 @@ class _JobSeekerProfileScreenState extends State<JobSeekerProfileScreen> {
                     color: Colors.black87,
                   ),
                 ),
-
                 const SizedBox(height: 40),
-
-                // Illustration
-                Image.asset('assets/images/ghar2.png', height: 150),
-
+                Image.asset('assets/images/employee.png', height: 150),
                 const SizedBox(height: 30),
-
                 const Text(
                   'Create your job-seeker profile',
                   style: TextStyle(
@@ -232,10 +183,9 @@ class _JobSeekerProfileScreenState extends State<JobSeekerProfileScreen> {
                     color: Colors.black87,
                   ),
                 ),
-
                 const SizedBox(height: 32),
 
-                // Employee ID field
+                // Employee ID
                 TextField(
                   controller: _employeeIdController,
                   decoration: InputDecoration(
@@ -264,7 +214,7 @@ class _JobSeekerProfileScreenState extends State<JobSeekerProfileScreen> {
 
                 const SizedBox(height: 16),
 
-                // Location field
+                // Location
                 TextField(
                   controller: _locationController,
                   decoration: InputDecoration(
@@ -293,7 +243,7 @@ class _JobSeekerProfileScreenState extends State<JobSeekerProfileScreen> {
 
                 const SizedBox(height: 16),
 
-                // Preferred Language field
+                // Language
                 TextField(
                   controller: _languageController,
                   decoration: InputDecoration(
@@ -322,7 +272,6 @@ class _JobSeekerProfileScreenState extends State<JobSeekerProfileScreen> {
 
                 const SizedBox(height: 20),
 
-                // Upload profile picture
                 const Text(
                   'Upload profile picture',
                   style: TextStyle(
@@ -331,7 +280,6 @@ class _JobSeekerProfileScreenState extends State<JobSeekerProfileScreen> {
                     color: Colors.black87,
                   ),
                 ),
-
                 const SizedBox(height: 12),
 
                 Container(
@@ -341,20 +289,15 @@ class _JobSeekerProfileScreenState extends State<JobSeekerProfileScreen> {
                     color: Colors.grey[100],
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Column(
-                    children: [
-                      Icon(
-                        Icons.cloud_upload_outlined,
-                        size: 40,
-                        color: Colors.grey[600],
-                      ),
-                    ],
+                  child: Icon(
+                    Icons.cloud_upload_outlined,
+                    size: 40,
+                    color: Colors.grey[600],
                   ),
                 ),
 
                 const SizedBox(height: 32),
 
-                // Next button
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -395,7 +338,6 @@ class _JobSeekerProfileScreenState extends State<JobSeekerProfileScreen> {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 30),
               ],
             ),
@@ -406,7 +348,7 @@ class _JobSeekerProfileScreenState extends State<JobSeekerProfileScreen> {
   }
 }
 
-// Screen 3 & 4: Add Skills Screen (with two states)
+// Screen 3 & 4: Add Skills Screen
 class AddSkillsScreen extends StatefulWidget {
   final String userName;
   final bool isJobSeeker;
@@ -428,11 +370,8 @@ class _AddSkillsScreenState extends State<AddSkillsScreen> {
     'Cleaning',
     'Plumbing',
     'Gardening',
-    'Add Other...',
   ];
   bool _showDropdown = false;
-  bool _showOtherField = false;
-  final TextEditingController _otherSkillController = TextEditingController();
 
   void _toggleSkill(String skill) {
     setState(() {
@@ -462,7 +401,6 @@ class _AddSkillsScreenState extends State<AddSkillsScreen> {
           child: Column(
             children: [
               const SizedBox(height: 20),
-
               Text(
                 'Welcome ${widget.userName}',
                 style: const TextStyle(
@@ -472,14 +410,9 @@ class _AddSkillsScreenState extends State<AddSkillsScreen> {
                   color: Colors.black87,
                 ),
               ),
-
               const SizedBox(height: 40),
-
-              // Illustration
-              Image.asset('assets/images/ghar2.png', height: 150),
-
+              Image.asset('assets/images/employee.png', height: 150),
               const SizedBox(height: 30),
-
               const Text(
                 'Add your skills',
                 style: TextStyle(
@@ -489,38 +422,32 @@ class _AddSkillsScreenState extends State<AddSkillsScreen> {
                   color: Colors.black87,
                 ),
               ),
-
               const SizedBox(height: 24),
-
-              // Selected skills chips
               if (_selectedSkills.isNotEmpty)
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: _selectedSkills.map((skill) {
-                    return Chip(
-                      label: Text(
-                        skill,
-                        style: const TextStyle(
-                          fontFamily: 'Axiforma',
-                          fontSize: 14,
+                  children: _selectedSkills
+                      .map(
+                        (skill) => Chip(
+                          label: Text(
+                            skill,
+                            style: const TextStyle(
+                              fontFamily: 'Axiforma',
+                              fontSize: 14,
+                            ),
+                          ),
+                          backgroundColor: Colors.grey[200],
+                          deleteIcon: const Icon(Icons.close, size: 18),
+                          onDeleted: () => _toggleSkill(skill),
                         ),
-                      ),
-                      backgroundColor: Colors.grey[200],
-                      deleteIcon: const Icon(Icons.close, size: 18),
-                      onDeleted: () => _toggleSkill(skill),
-                    );
-                  }).toList(),
+                      )
+                      .toList(),
                 ),
-
               const SizedBox(height: 16),
-
-              // Skills dropdown button
               GestureDetector(
                 onTap: () {
-                  setState(() {
-                    _showDropdown = !_showDropdown;
-                  });
+                  setState(() => _showDropdown = !_showDropdown);
                 },
                 child: Container(
                   width: double.infinity,
@@ -553,8 +480,6 @@ class _AddSkillsScreenState extends State<AddSkillsScreen> {
                   ),
                 ),
               ),
-
-              // Dropdown menu
               if (_showDropdown)
                 Container(
                   margin: const EdgeInsets.only(top: 8),
@@ -566,96 +491,48 @@ class _AddSkillsScreenState extends State<AddSkillsScreen> {
                   ),
                   child: Column(
                     children: [
-                      ..._availableSkills.map((skill) {
-                        if (skill == 'Add Other...') {
-                          return ListTile(
-                            title: Text(
-                              skill,
-                              style: const TextStyle(
-                                fontFamily: 'Axiforma',
-                                fontSize: 15,
-                              ),
+                      ..._availableSkills.map(
+                        (skill) => ListTile(
+                          title: Text(
+                            skill,
+                            style: const TextStyle(
+                              fontFamily: 'Axiforma',
+                              fontSize: 15,
                             ),
-                            trailing: Icon(
-                              Icons.add_circle_outline,
-                              color: Colors.grey[700],
-                            ),
-                            onTap: () {
-                              setState(() {
-                                _showOtherField = true;
-                                _showDropdown = false;
-                              });
-                            },
-                          );
-                        } else {
-                          return ListTile(
-                            title: Text(
-                              skill,
-                              style: const TextStyle(
-                                fontFamily: 'Axiforma',
-                                fontSize: 15,
-                              ),
-                            ),
-                            trailing: Icon(
-                              Icons.add_circle_outline,
-                              color: Colors.grey[700],
-                            ),
-                            onTap: () {
-                              _toggleSkill(skill);
-                              setState(() {
-                                _showDropdown = false;
-                              });
-                            },
-                          );
-                        }
-                      }).toList(),
+                          ),
+                          trailing: Icon(
+                            Icons.add_circle_outline,
+                            color: Colors.grey[700],
+                          ),
+                          onTap: () {
+                            _toggleSkill(skill);
+                            setState(() => _showDropdown = false);
+                          },
+                        ),
+                      ),
+                      ListTile(
+                        title: const Text(
+                          'Add other',
+                          style: TextStyle(
+                            fontFamily: 'Axiforma',
+                            fontSize: 15,
+                          ),
+                        ),
+                        trailing: Icon(
+                          Icons.add_circle_outline,
+                          color: Colors.grey[700],
+                        ),
+                        onTap: () => setState(() => _showDropdown = false),
+                      ),
                     ],
                   ),
                 ),
-
-              if (_showOtherField)
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _otherSkillController,
-                        decoration: const InputDecoration(
-                          hintText: 'Enter new skill',
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton(
-                      onPressed: () {
-                        final newSkill = _otherSkillController.text.trim();
-                        if (newSkill.isNotEmpty &&
-                            !_availableSkills.contains(newSkill)) {
-                          setState(() {
-                            _availableSkills.insert(
-                              _availableSkills.length - 1,
-                              newSkill,
-                            );
-                            _toggleSkill(newSkill);
-                            _showOtherField = false;
-                            _otherSkillController.clear();
-                          });
-                        }
-                      },
-                      child: const Text('Add'),
-                    ),
-                  ],
-                ),
-
               const Spacer(),
-
-              // Update button
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: _selectedSkills.isNotEmpty
                       ? () {
-                          // Navigate to home
                           Navigator.pushAndRemoveUntil(
                             context,
                             MaterialPageRoute(
@@ -685,7 +562,6 @@ class _AddSkillsScreenState extends State<AddSkillsScreen> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 30),
             ],
           ),
@@ -736,7 +612,6 @@ class _JobProviderProfileScreenState extends State<JobProviderProfileScreen> {
             child: Column(
               children: [
                 const SizedBox(height: 20),
-
                 Text(
                   'Welcome ${widget.userName}',
                   style: const TextStyle(
@@ -746,14 +621,9 @@ class _JobProviderProfileScreenState extends State<JobProviderProfileScreen> {
                     color: Colors.black87,
                   ),
                 ),
-
                 const SizedBox(height: 40),
-
-                // Illustration
-                Image.asset('assets/images/ghar2.png', height: 150),
-
+                Image.asset('assets/images/employer.png', height: 150),
                 const SizedBox(height: 30),
-
                 const Text(
                   'Create your job-provider profile',
                   style: TextStyle(
@@ -763,10 +633,9 @@ class _JobProviderProfileScreenState extends State<JobProviderProfileScreen> {
                     color: Colors.black87,
                   ),
                 ),
-
                 const SizedBox(height: 32),
 
-                // Employer ID field
+                // Employer ID
                 TextField(
                   controller: _employerIdController,
                   decoration: InputDecoration(
@@ -795,7 +664,7 @@ class _JobProviderProfileScreenState extends State<JobProviderProfileScreen> {
 
                 const SizedBox(height: 16),
 
-                // Location field
+                // Location
                 TextField(
                   controller: _locationController,
                   decoration: InputDecoration(
@@ -824,7 +693,6 @@ class _JobProviderProfileScreenState extends State<JobProviderProfileScreen> {
 
                 const SizedBox(height: 150),
 
-                // Log In button (goes directly to home)
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -856,7 +724,6 @@ class _JobProviderProfileScreenState extends State<JobProviderProfileScreen> {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 30),
               ],
             ),

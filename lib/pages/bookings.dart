@@ -1,8 +1,7 @@
-import '../pages/feedback_review.dart';
 import 'package:flutter/material.dart';
 import '../widgets/bottom_nav_bar.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../widgets/job_details.dart';
+import '../pages/feedback_review.dart';
 import '../pages/pending_activities.dart';
 
 class BookingsPage extends StatefulWidget {
@@ -13,81 +12,6 @@ class BookingsPage extends StatefulWidget {
 }
 
 class _BookingsPageState extends State<BookingsPage> {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
-  Future<void> addBooking({
-  required String employerId, // Corresponds to employer_id (FK)
-  required String employeeId, // Corresponds to employee_id (FK)
-  required DateTime bookingDate, // Corresponds to bdate
-  // You might also want to link it to a Job/Task for context:
-  String? taskId, 
-  String status = 'Confirmed',
-}) async {
-  try {
-    await _firestore.collection('BOOKING').add({ // Use the correct table/collection name
-      'employer_id': employerId,
-      'employee_id': employeeId,
-      'bdate': bookingDate,
-      'taskId': taskId, // Optional: for linking to the TASK
-      'status': status,
-      'createdAt': FieldValue.serverTimestamp(),
-    });
-    print("✅ Booking added successfully to BOOKING table!");
-  } catch (e) {
-    print("❌ Error adding booking: $e");
-  }
-}
-
-// Function to fetch bookings data from Firestore
-Stream<List<Map<String, dynamic>>> fetchBookings() {
-  // 1. Get the current user's ID (Placeholder - replace with actual user authentication)
-  // For this example, let's assume we have a way to get the current user's ID.
-  // const String currentUserId = 'user_abc_123'; 
-  
-  // 2. Define the field to query based on user type (employer_id or employee_id)
-  final String queryField = _userType == 'Employer' ? 'employer_id' : 'employee_id';
-  // 3. Define the filter for Upcoming/Past based on date
-  final DateTime now = DateTime.now();
-  
-  // Create a base query on the BOOKING collection
-  Query query = _firestore.collection('BOOKING');
-
-  // Filter by the current user's ID (Essential for security and relevance)
-  // In a real app, you would pass the *actual* ID of the logged-in user here.
-  // Example with a placeholder ID:
-  // query = query.where(queryField, isEqualTo: currentUserId);
-
-  // Filter by date for Upcoming/Past tabs
-  if (_selectedTab == 'Upcoming') {
-    // Bookings scheduled for today or later
-    query = query.where('bdate', isGreaterThanOrEqualTo: now);
-  } else { // 'Past' tab
-    // Bookings that were scheduled before today (and are presumably completed)
-    query = query.where('bdate', isLessThan: now);
-  }
-
-  // Stream data changes
-  return query.snapshots().map((snapshot) {
-    // Map Firestore documents to a list of dart maps
-    return snapshot.docs.map((doc) {
-      final data = doc.data() as Map<String, dynamic>;
-      
-      // Combine booking data with the Firestore document ID (which can serve as the booking_id)
-      // Note: You would likely need a complex join or nested read to get 'service' and 'time'
-      // from JOB_POSTING/TASK, as these fields aren't in the BOOKING table in your schema.
-      // For a simplified example, we'll use placeholder/simplified data:
-      
-      return {
-        'booking_id': doc.id, // The Firebase document ID
-        'service': 'Service from Task/Job', // Need to fetch this
-        'scheduledOn': data['bdate'] != null ? (data['bdate'] as Timestamp).toDate().toString().split(' ')[0] : 'N/A', // Format date
-        'time': '3:00 pm to 6:00 pm', // Need to fetch this
-        'amount': '₹800', // Need to calculate/fetch this
-      };
-    }).toList();
-  });
-}
-
   String _userType = 'Employer'; // 'Employer' or 'Employee'
   String _selectedTab = 'Upcoming'; // 'Upcoming' or 'Past'
 
@@ -100,73 +24,53 @@ Stream<List<Map<String, dynamic>>> fetchBookings() {
       'amount': '₹800',
     },
     {
-      'service': 'General Plumbing',
-      'scheduledOn': '26 September 2025',
-      'time': '3:00 pm to 6:00 pm',
-      'amount': '₹800',
-    },
-    {
-      'service': 'General Plumbing',
-      'scheduledOn': '26 September 2025',
-      'time': '3:00 pm to 6:00 pm',
-      'amount': '₹800',
+      'service': 'House Cleaning',
+      'scheduledOn': '28 September 2025',
+      'time': '9:00 am to 11:00 am',
+      'amount': '₹500',
     },
   ];
 
   final List<Map<String, dynamic>> _employerPastBookings = [
     {
-      'service': 'General Plumbing',
-      'scheduledOn': '28 August 2025',
-      'time': '3:00 pm to 6:00 pm',
-      'amount': '₹800',
-    },
-    {
-      'service': 'General Plumbing',
-      'scheduledOn': '28 August 2025',
-      'time': '3:00 pm to 6:00 pm',
-      'amount': '₹800',
-    },
-    {
       'service': 'Coconut Plucking',
-      'scheduledOn': '28 August 2025',
+      'scheduledOn': '18 August 2025',
       'time': '3:00 pm to 6:00 pm',
-      'amount': '₹800',
+      'amount': '₹700',
     },
     {
-      'service': 'Coconut Plucking',
-      'scheduledOn': '28 August 2025',
-      'time': '3:00 pm to 6:00 pm',
-      'amount': '₹800',
+      'service': 'Garden Maintenance',
+      'scheduledOn': '10 August 2025',
+      'time': '9:00 am to 12:00 pm',
+      'amount': '₹600',
     },
   ];
 
   final List<Map<String, dynamic>> _employeeUpcomingBookings = [
     {
-      'service': 'Coconut Plucking',
+      'service': 'Electrician Work',
       'scheduledOn': '26 September 2025',
       'time': '3:00 pm to 6:00 pm',
-      'amount': '₹800',
+      'amount': '₹1000',
     },
     {
-      'service': 'Coconut Plucking',
-      'scheduledOn': '26 September 2025',
-      'time': '3:00 pm to 6:00 pm',
-      'amount': '₹800',
-    },
-    {
-      'service': 'Coconut Plucking',
-      'scheduledOn': '26 September 2025',
-      'time': '3:00 pm to 6:00 pm',
-      'amount': '₹800',
-    },
-    {
-      'service': 'Coconut Plucking',
-      'scheduledOn': '26 September 2025',
-      'time': '3:00 pm to 6:00 pm',
+      'service': 'Gardening',
+      'scheduledOn': '30 September 2025',
+      'time': '9:00 am to 12:00 pm',
       'amount': '₹800',
     },
   ];
 
+  final List<Map<String, dynamic>> _employeePastBookings = [
+    {
+      'service': 'Furniture Repair',
+      'scheduledOn': '20 August 2025',
+      'time': '10:00 am to 1:00 pm',
+      'amount': '₹900',
+    },
+  ];
+
+  // ✅ Booking card
   Widget _buildBookingCard(Map<String, dynamic> booking, bool isPast) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -243,8 +147,7 @@ Stream<List<Map<String, dynamic>>> fetchBookings() {
                       date: booking['scheduledOn'] ?? '',
                       time: booking['time'] ?? '',
                       price: booking['amount'] ?? '',
-                      showInterestedButton:
-                          false, // No Interested button in Bookings
+                      showInterestedButton: false,
                     );
                   },
                   style: OutlinedButton.styleFrom(
@@ -279,7 +182,7 @@ Stream<List<Map<String, dynamic>>> fetchBookings() {
                           builder: (context) => GiveFeedbackPage(
                             serviceName: booking['service'],
                             employeeName:
-                                'Employee Name', // Replace with actual employee name
+                                'Employee Name', // Replace with dynamic data if needed
                           ),
                         ),
                       );
@@ -334,7 +237,9 @@ Stream<List<Map<String, dynamic>>> fetchBookings() {
           ? _employerUpcomingBookings
           : _employerPastBookings;
     } else {
-      return _selectedTab == 'Upcoming' ? _employeeUpcomingBookings : [];
+      return _selectedTab == 'Upcoming'
+          ? _employeeUpcomingBookings
+          : _employeePastBookings;
     }
   }
 
@@ -518,49 +423,20 @@ Stream<List<Map<String, dynamic>>> fetchBookings() {
 
             const SizedBox(height: 16),
 
-            // Bookings list or empty state
-           Expanded(
-              child: StreamBuilder<List<Map<String, dynamic>>>(
-                stream: fetchBookings(), // Calls the function we created above
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    // Show a loading indicator while data is being fetched
-                    return const Center(child: CircularProgressIndicator(color: Color(0xFF283891)));
-                  }
-
-                  if (snapshot.hasError) {
-                    // Show error message
-                    print('Error fetching bookings: ${snapshot.error}');
-                    return _buildEmptyState('Error loading bookings. Please try again.');
-                  }
-
-                  final currentBookings = snapshot.data ?? [];
-                  final bool showEmptyState = currentBookings.isEmpty;
-
-                  if (showEmptyState) {
-                    // Show an appropriate empty state message
-                    return _buildEmptyState(
-                        _userType == 'Employee' && _selectedTab == 'Past'
-                            ? 'No Past Orders Yet!\nas Employee!'
-                            : _userType == 'Employee' && _selectedTab == 'Upcoming'
-                                ? 'No Upcoming Bookings Found!'
-                                : 'No bookings found',
-                    );
-                  }
-
-                  // Display the list of bookings
-                  return ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    itemCount: currentBookings.length,
-                    itemBuilder: (context, index) {
-                      return _buildBookingCard(
-                        currentBookings[index],
-                        _selectedTab == 'Past',
-                      );
-                    },
-                  );
-                },
-              ),
+            // Booking list or empty message
+            Expanded(
+              child: showEmptyState
+                  ? _buildEmptyState('No bookings available.')
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      itemCount: currentBookings.length,
+                      itemBuilder: (context, index) {
+                        return _buildBookingCard(
+                          currentBookings[index],
+                          _selectedTab == 'Past',
+                        );
+                      },
+                    ),
             ),
           ],
         ),
