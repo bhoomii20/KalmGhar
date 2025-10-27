@@ -89,7 +89,7 @@ class AccountPage extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'abc xyz',
+                          'Full Name',
                           style: TextStyle(
                             fontFamily: 'Axiforma',
                             fontSize: 18,
@@ -327,6 +327,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     required TextEditingController controller,
     TextInputType? keyboardType,
     int maxLines = 1,
+    bool readOnly = false,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -345,6 +346,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
           controller: controller,
           keyboardType: keyboardType,
           maxLines: maxLines,
+          readOnly: readOnly,
           style: const TextStyle(
             fontFamily: 'Axiforma',
             fontSize: 15,
@@ -451,19 +453,21 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
                 const SizedBox(height: 20),
 
-                // Username
+                // Username (read-only)
                 _buildTextField(
                   label: 'Username',
                   controller: _usernameController,
+                  readOnly: true,
                 ),
 
                 const SizedBox(height: 20),
 
-                // Mobile Number
+                // Mobile Number (read-only)
                 _buildTextField(
                   label: 'Mobile Number',
                   controller: _mobileController,
                   keyboardType: TextInputType.phone,
+                  readOnly: true,
                 ),
 
                 const SizedBox(height: 20),

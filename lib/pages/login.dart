@@ -526,46 +526,49 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
               const SizedBox(height: 32),
 
               // OTP Input boxes
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(6, (index) {
-                  return Container(
-                    width: 44,
-                    height: 48,
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    child: TextField(
-                      controller: _otpControllers[index],
-                      focusNode: _focusNodes[index],
-                      textAlign: TextAlign.center,
-                      keyboardType: TextInputType.number,
-                      maxLength: 1,
-                      style: const TextStyle(
-                        fontFamily: 'Axiforma',
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      decoration: InputDecoration(
-                        counterText: '',
-                        filled: true,
-                        fillColor: Colors.grey[300],
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(6, (index) {
+                    return Container(
+                      width: MediaQuery.of(context).size.width <= 350 ? 36 : 44,
+                      height: 48,
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                      child: TextField(
+                        controller: _otpControllers[index],
+                        focusNode: _focusNodes[index],
+                        textAlign: TextAlign.center,
+                        keyboardType: TextInputType.number,
+                        maxLength: 1,
+                        style: const TextStyle(
+                          fontFamily: 'Axiforma',
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
                         ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          vertical: 10,
+                        decoration: InputDecoration(
+                          counterText: '',
+                          filled: true,
+                          fillColor: Colors.grey[300],
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 8,
+                          ),
                         ),
+                        onChanged: (value) {
+                          if (value.length == 1 && index < 5) {
+                            _focusNodes[index + 1].requestFocus();
+                          } else if (value.isEmpty && index > 0) {
+                            _focusNodes[index - 1].requestFocus();
+                          }
+                        },
                       ),
-                      onChanged: (value) {
-                        if (value.length == 1 && index < 5) {
-                          _focusNodes[index + 1].requestFocus();
-                        } else if (value.isEmpty && index > 0) {
-                          _focusNodes[index - 1].requestFocus();
-                        }
-                      },
-                    ),
-                  );
-                }),
+                    );
+                  }),
+                ),
               ),
 
               const SizedBox(height: 32),
