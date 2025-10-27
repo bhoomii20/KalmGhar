@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'home.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../services/auth_service.dart';
 
 // Screen 1: Choose Role
 class ChooseRoleScreen extends StatelessWidget {
@@ -11,12 +12,9 @@ class ChooseRoleScreen extends StatelessWidget {
 
   Future<void> _updateUserRole(BuildContext context, String role) async {
     try {
+      final authService = AuthService();
       // Update the user's role in Firestore
-      await FirebaseFirestore.instance.collection('users').doc(userName).set({
-        'role': role, // 'employee' or 'employer'
-        'userName': userName,
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      await authService.updateUserType(role);
 
       // Navigate to the appropriate screen based on role
       if (!context.mounted) return;

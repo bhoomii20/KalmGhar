@@ -4,6 +4,7 @@ import '../widgets/bottom_nav_bar.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../widgets/job_details.dart';
 import '../pages/pending_activities.dart';
+import '../services/firestore_service.dart';
 
 class BookingsPage extends StatefulWidget {
   const BookingsPage({super.key});
@@ -14,82 +15,59 @@ class BookingsPage extends StatefulWidget {
 
 class _BookingsPageState extends State<BookingsPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirestoreService _firestoreService = FirestoreService();
 
+  // This function is kept for reference but not used directly in the UI
   Future<void> addBooking({
-  required String employerId, // Corresponds to employer_id (FK)
-  required String employeeId, // Corresponds to employee_id (FK)
-  required DateTime bookingDate, // Corresponds to bdate
-  // You might also want to link it to a Job/Task for context:
-  String? taskId, 
-  String status = 'Confirmed',
-}) async {
-  try {
-    await _firestore.collection('BOOKING').add({ // Use the correct table/collection name
-      'employer_id': employerId,
-      'employee_id': employeeId,
-      'bdate': bookingDate,
-      'taskId': taskId, // Optional: for linking to the TASK
-      'status': status,
-      'createdAt': FieldValue.serverTimestamp(),
-    });
-    print("✅ Booking added successfully to BOOKING table!");
-  } catch (e) {
-    print("❌ Error adding booking: $e");
-  }
-}
-
-// Function to fetch bookings data from Firestore
-Stream<List<Map<String, dynamic>>> fetchBookings() {
-  // 1. Get the current user's ID (Placeholder - replace with actual user authentication)
-  // For this example, let's assume we have a way to get the current user's ID.
-  // const String currentUserId = 'user_abc_123'; 
-  
-  // 2. Define the field to query based on user type (employer_id or employee_id)
-  final String queryField = _userType == 'Employer' ? 'employer_id' : 'employee_id';
-  // 3. Define the filter for Upcoming/Past based on date
-  final DateTime now = DateTime.now();
-  
-  // Create a base query on the BOOKING collection
-  Query query = _firestore.collection('BOOKING');
-
-  // Filter by the current user's ID (Essential for security and relevance)
-  // In a real app, you would pass the *actual* ID of the logged-in user here.
-  // Example with a placeholder ID:
-  // query = query.where(queryField, isEqualTo: currentUserId);
-
-  // Filter by date for Upcoming/Past tabs
-  if (_selectedTab == 'Upcoming') {
-    // Bookings scheduled for today or later
-    query = query.where('bdate', isGreaterThanOrEqualTo: now);
-  } else { // 'Past' tab
-    // Bookings that were scheduled before today (and are presumably completed)
-    query = query.where('bdate', isLessThan: now);
+    required String employerId,
+    required String employeeId,
+    required String service,
+    required String scheduledOn,
+    required String time,
+    required String amount,
+  }) async {
+    try {
+      await _firestoreService.saveBooking(
+        employerId: employerId,
+        employeeId: employeeId,
+        service: service,
+        scheduledOn: scheduledOn,
+        time: time,
+        amount: amount,
+      );
+      print("✅ Booking added successfully!");
+    } catch (e) {
+      print("❌ Error adding booking: $e");
+    }
   }
 
-  // Stream data changes
-  return query.snapshots().map((snapshot) {
-    // Map Firestore documents to a list of dart maps
-    return snapshot.docs.map((doc) {
-      final data = doc.data() as Map<String, dynamic>;
-      
-      // Combine booking data with the Firestore document ID (which can serve as the booking_id)
-      // Note: You would likely need a complex join or nested read to get 'service' and 'time'
-      // from JOB_POSTING/TASK, as these fields aren't in the BOOKING table in your schema.
-      // For a simplified example, we'll use placeholder/simplified data:
-      
-      return {
-        'booking_id': doc.id, // The Firebase document ID
-        'service': 'Service from Task/Job', // Need to fetch this
-        'scheduledOn': data['bdate'] != null ? (data['bdate'] as Timestamp).toDate().toString().split(' ')[0] : 'N/A', // Format date
-        'time': '3:00 pm to 6:00 pm', // Need to fetch this
-        'amount': '₹800', // Need to calculate/fetch this
-      };
-    }).toList();
-  });
-}
+  // Function to fetch bookings data from Firestore
+  Stream<List<Map<String, dynamic>>> fetchBookings() {
+    return _firestoreService.getBookings(_userType);
+  }
 
   String _userType = 'Employer'; // 'Employer' or 'Employee'
   String _selectedTab = 'Upcoming'; // 'Upcoming' or 'Past'
+
+  @override
+  void initState() {
+    super.initState();
+    // Load current user's profile to determine user type
+    _loadUserProfile();
+  }
+
+  Future<void> _loadUserProfile() async {
+    try {
+      final profile = await _firestoreService.getUserProfile();
+      if (profile != null && profile['userType'] != null) {
+        setState(() {
+          _userType = profile['userType'];
+        });
+      }
+    } catch (e) {
+      print('Error loading user profile: $e');
+    }
+  }
 
   // Sample booking data
   final List<Map<String, dynamic>> _employerUpcomingBookings = [
@@ -328,20 +306,9 @@ Stream<List<Map<String, dynamic>>> fetchBookings() {
     );
   }
 
-  List<Map<String, dynamic>> _getCurrentBookings() {
-    if (_userType == 'Employer') {
-      return _selectedTab == 'Upcoming'
-          ? _employerUpcomingBookings
-          : _employerPastBookings;
-    } else {
-      return _selectedTab == 'Upcoming' ? _employeeUpcomingBookings : [];
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
-    final currentBookings = _getCurrentBookings();
-    final bool showEmptyState = currentBookings.isEmpty;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -535,16 +502,15 @@ Stream<List<Map<String, dynamic>>> fetchBookings() {
                   }
 
                   final currentBookings = snapshot.data ?? [];
-                  final bool showEmptyState = currentBookings.isEmpty;
 
-                  if (showEmptyState) {
+                  if (currentBookings.isEmpty) {
                     // Show an appropriate empty state message
                     return _buildEmptyState(
-                        _userType == 'Employee' && _selectedTab == 'Past'
-                            ? 'No Past Orders Yet!\nas Employee!'
-                            : _userType == 'Employee' && _selectedTab == 'Upcoming'
-                                ? 'No Upcoming Bookings Found!'
-                                : 'No bookings found',
+                      _userType == 'Employee' && _selectedTab == 'Past'
+                          ? 'No Past Orders Yet!\nas Employee!'
+                          : _userType == 'Employee' && _selectedTab == 'Upcoming'
+                              ? 'No Upcoming Bookings Found!'
+                              : 'No bookings found',
                     );
                   }
 
