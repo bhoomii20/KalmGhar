@@ -3,6 +3,7 @@ import '../widgets/bottom_nav_bar.dart';
 import '../widgets/job_details.dart';
 import '../pages/feedback_review.dart';
 import '../pages/pending_activities.dart';
+import '../services/firestore_service.dart';
 
 class BookingsPage extends StatefulWidget {
   const BookingsPage({super.key});
@@ -12,8 +13,63 @@ class BookingsPage extends StatefulWidget {
 }
 
 class _BookingsPageState extends State<BookingsPage> {
+<<<<<<< HEAD
+=======
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirestoreService _firestoreService = FirestoreService();
+
+  // This function is kept for reference but not used directly in the UI
+  Future<void> addBooking({
+    required String employerId,
+    required String employeeId,
+    required String service,
+    required String scheduledOn,
+    required String time,
+    required String amount,
+  }) async {
+    try {
+      await _firestoreService.saveBooking(
+        employerId: employerId,
+        employeeId: employeeId,
+        service: service,
+        scheduledOn: scheduledOn,
+        time: time,
+        amount: amount,
+      );
+      print("✅ Booking added successfully!");
+    } catch (e) {
+      print("❌ Error adding booking: $e");
+    }
+  }
+
+  // Function to fetch bookings data from Firestore
+  Stream<List<Map<String, dynamic>>> fetchBookings() {
+    return _firestoreService.getBookings(_userType);
+  }
+
+>>>>>>> 17f13d10bc8cd790ce5758ab127778bd5473bb53
   String _userType = 'Employer'; // 'Employer' or 'Employee'
   String _selectedTab = 'Upcoming'; // 'Upcoming' or 'Past'
+
+  @override
+  void initState() {
+    super.initState();
+    // Load current user's profile to determine user type
+    _loadUserProfile();
+  }
+
+  Future<void> _loadUserProfile() async {
+    try {
+      final profile = await _firestoreService.getUserProfile();
+      if (profile != null && profile['userType'] != null) {
+        setState(() {
+          _userType = profile['userType'];
+        });
+      }
+    } catch (e) {
+      print('Error loading user profile: $e');
+    }
+  }
 
   // Sample booking data
   final List<Map<String, dynamic>> _employerUpcomingBookings = [
@@ -231,6 +287,7 @@ class _BookingsPageState extends State<BookingsPage> {
     );
   }
 
+<<<<<<< HEAD
   List<Map<String, dynamic>> _getCurrentBookings() {
     if (_userType == 'Employer') {
       return _selectedTab == 'Upcoming'
@@ -242,11 +299,11 @@ class _BookingsPageState extends State<BookingsPage> {
           : _employeePastBookings;
     }
   }
+=======
+>>>>>>> 17f13d10bc8cd790ce5758ab127778bd5473bb53
 
   @override
   Widget build(BuildContext context) {
-    final currentBookings = _getCurrentBookings();
-    final bool showEmptyState = currentBookings.isEmpty;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -423,6 +480,7 @@ class _BookingsPageState extends State<BookingsPage> {
 
             const SizedBox(height: 16),
 
+<<<<<<< HEAD
             // Booking list or empty message
             Expanded(
               child: showEmptyState
@@ -437,6 +495,50 @@ class _BookingsPageState extends State<BookingsPage> {
                         );
                       },
                     ),
+=======
+            // Bookings list or empty state
+           Expanded(
+              child: StreamBuilder<List<Map<String, dynamic>>>(
+                stream: fetchBookings(), // Calls the function we created above
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    // Show a loading indicator while data is being fetched
+                    return const Center(child: CircularProgressIndicator(color: Color(0xFF283891)));
+                  }
+
+                  if (snapshot.hasError) {
+                    // Show error message
+                    print('Error fetching bookings: ${snapshot.error}');
+                    return _buildEmptyState('Error loading bookings. Please try again.');
+                  }
+
+                  final currentBookings = snapshot.data ?? [];
+
+                  if (currentBookings.isEmpty) {
+                    // Show an appropriate empty state message
+                    return _buildEmptyState(
+                      _userType == 'Employee' && _selectedTab == 'Past'
+                          ? 'No Past Orders Yet!\nas Employee!'
+                          : _userType == 'Employee' && _selectedTab == 'Upcoming'
+                              ? 'No Upcoming Bookings Found!'
+                              : 'No bookings found',
+                    );
+                  }
+
+                  // Display the list of bookings
+                  return ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    itemCount: currentBookings.length,
+                    itemBuilder: (context, index) {
+                      return _buildBookingCard(
+                        currentBookings[index],
+                        _selectedTab == 'Past',
+                      );
+                    },
+                  );
+                },
+              ),
+>>>>>>> 17f13d10bc8cd790ce5758ab127778bd5473bb53
             ),
           ],
         ),

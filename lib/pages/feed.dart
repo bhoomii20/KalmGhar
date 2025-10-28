@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../widgets/bottom_nav_bar.dart';
 import '../widgets/job_details.dart';
 import '../pages/pending_activities.dart';
+import '../services/firestore_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class FeedPage extends StatefulWidget {
   final String? filterCategory;
@@ -14,45 +16,13 @@ class FeedPage extends StatefulWidget {
 class _FeedPageState extends State<FeedPage> {
   String _selectedFilter = 'Bestsellers';
   final TextEditingController _searchController = TextEditingController();
+  final FirestoreService _firestoreService = FirestoreService();
 
   final List<String> _filters = [
     'Bestsellers',
     'Recommended',
     'Offers',
     'Rating 4+',
-  ];
-
-  final List<Map<String, String>> _jobs = [
-    {
-      'title': 'Need Coconut Plucker',
-      'date': '01 October 2025',
-      'time': '10:00 - 11:30 am',
-      'description': 'Job Description',
-    },
-    {
-      'title': 'Need Coconut Plucker',
-      'date': '01 October 2025',
-      'time': '10:00 - 11:30 am',
-      'description': 'Job Description',
-    },
-    {
-      'title': 'Need Coconut Plucker',
-      'date': '01 October 2025',
-      'time': '10:00 - 11:30 am',
-      'description': 'Job Description',
-    },
-    {
-      'title': 'Need Coconut Plucker',
-      'date': '01 October 2025',
-      'time': '10:00 - 11:30 am',
-      'description': 'Job Description',
-    },
-    {
-      'title': 'Need Coconut Plucker',
-      'date': '01 October 2025',
-      'time': '10:00 - 11:30 am',
-      'description': 'Job Description',
-    },
   ];
 
   @override
@@ -70,20 +40,20 @@ class _FeedPageState extends State<FeedPage> {
     super.dispose();
   }
 
-  Widget _buildJobCard(Map<String, String> job) {
+  Widget _buildJobCard(Map<String, dynamic> job) {
     return GestureDetector(
       onTap: () {
         // Show job details modal from reusable widget
-        showJobDetailsModal(
-          context: context,
-          jobTitle: job['title'] ?? '',
-          jobDescription: job['description'] ?? '',
-          location: 'Bicholim, Goa',
-          date: job['date'] ?? '',
-          time: job['time'] ?? '',
-          price: '₹800',
-          showInterestedButton: true, // Show Interested button in Feed
-        );
+                    showJobDetailsModal(
+                      context: context,
+                      jobTitle: job['title'] ?? '',
+                      jobDescription: job['description'] ?? '',
+                      location: job['location'] ?? 'Bicholim, Goa',
+                      date: job['date'] ?? '',
+                      time: job['time'] ?? '',
+                      price: job['price'] ?? '₹800',
+                      showInterestedButton: true, // Show Interested button in Feed
+                    );
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
@@ -308,11 +278,42 @@ class _FeedPageState extends State<FeedPage> {
 
             // Job list
             Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                itemCount: _jobs.length,
-                itemBuilder: (context, index) {
-                  return _buildJobCard(_jobs[index]);
+              child: StreamBuilder<List<Map<String, dynamic>>>(
+                stream: _firestoreService.getFeedJobs(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                      child: CircularProgressIndicator(color: Color(0xFF283891)),
+                    );
+                  }
+
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Text(
+                        'Error loading jobs: ${snapshot.error}',
+                        style: const TextStyle(fontFamily: 'Axiforma'),
+                      ),
+                    );
+                  }
+
+                  final jobs = snapshot.data ?? [];
+                  
+                  if (jobs.isEmpty) {
+                    return const Center(
+                      child: Text(
+                        'No jobs available',
+                        style: TextStyle(fontFamily: 'Axiforma'),
+                      ),
+                    );
+                  }
+
+                  return ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    itemCount: jobs.length,
+                    itemBuilder: (context, index) {
+                      return _buildJobCard(jobs[index]);
+                    },
+                  );
                 },
               ),
             ),
@@ -338,6 +339,7 @@ class _PostJobPageState extends State<PostJobPage> {
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _timeController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
+  final FirestoreService _firestoreService = FirestoreService();
 
   @override
   void dispose() {
@@ -635,15 +637,53 @@ class _PostJobPageState extends State<PostJobPage> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () {
-                      // Handle post job
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Job posted successfully!'),
-                          backgroundColor: Color(0xFF283891),
-                        ),
-                      );
+                    onPressed: () async {
+                      // Validate inputs
+                      if (_titleController.text.trim().isEmpty ||
+                          _descriptionController.text.trim().isEmpty ||
+                          _locationController.text.trim().isEmpty ||
+                          _dateController.text.trim().isEmpty ||
+                          _timeController.text.trim().isEmpty ||
+                          _priceController.text.trim().isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Please fill all fields'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return;
+                      }
+
+                      // Save job to Firestore
+                      try {
+                        await _firestoreService.saveJob(
+                          title: _titleController.text.trim(),
+                          description: _descriptionController.text.trim(),
+                          location: _locationController.text.trim(),
+                          date: _dateController.text.trim(),
+                          time: _timeController.text.trim(),
+                          price: _priceController.text.trim(),
+                        );
+
+                        if (mounted) {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Job posted successfully!'),
+                              backgroundColor: Color(0xFF283891),
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Error posting job: $e'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF283891),

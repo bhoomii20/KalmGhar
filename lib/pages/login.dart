@@ -5,7 +5,7 @@ import 'package:flutter/gestures.dart';
 import 'home.dart';
 import 'roles.dart';
 import 'dart:async';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../services/auth_service.dart';
 
 // Main Login Screen (Screen 1) - Updated with Firebase Authentication
 class LoginScreen extends StatefulWidget {
@@ -19,7 +19,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _mobileController = TextEditingController();
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final AuthService _authService = AuthService();
 
   String _userType = 'Employer'; // Default value
   bool _isLoading = false;
@@ -54,14 +54,12 @@ class _LoginScreenState extends State<LoginScreen> {
   // Check if user exists in Firestore
   Future<bool> _checkUserExists() async {
     try {
-      final querySnapshot = await _firestore
-          .collection('users')
-          .where('username', isEqualTo: _usernameController.text.trim())
-          .where('phone', isEqualTo: _mobileController.text.trim())
-          .where('userType', isEqualTo: _userType)
-          .get();
-
-      return querySnapshot.docs.isNotEmpty;
+      final exists = await _authService.checkUserExists(
+        _usernameController.text.trim(),
+        _mobileController.text.trim(),
+        _userType,
+      );
+      return exists;
     } catch (e) {
       showSnackBar(context, 'Error checking user: $e');
       return false;
@@ -657,7 +655,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController _mobileController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final AuthService _authService = AuthService();
 
   bool _acceptTerms = false;
   bool _isLoading = false;
@@ -671,24 +669,22 @@ class _SignUpScreenState extends State<SignUpScreen> {
     super.dispose();
   }
 
-  Future<void> initiatePhoneAuth() async {
-    // Use this only during development/testing.
-    await FirebaseAuth.instance.setSettings(
-      appVerificationDisabledForTesting: true,
-    );
-
-    // Now proceed with verifyPhoneNumber or other auth calls.
+  // NEW SIGN-UP METHOD: Email/Password (No billing required)
+  // 
+  // FIX: Replaced phone SMS auth with email/password to eliminate "billing not enabled" error
+  // This allows brand-new users to register without requiring Firebase billing
+  Future<void> createAccount() async {
     // Validate inputs
     if (_usernameController.text.trim().isEmpty ||
         _fullNameController.text.trim().isEmpty ||
-        _mobileController.text.trim().isEmpty ||
         _emailController.text.trim().isEmpty) {
-      showSnackBar(context, 'Please fill all fields');
+      showSnackBar(context, 'Please fill all required fields');
       return;
     }
 
-    if (_mobileController.text.trim().length != 10) {
-      showSnackBar(context, 'Please enter a valid 10-digit mobile number');
+    // Validate email format
+    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(_emailController.text.trim())) {
+      showSnackBar(context, 'Please enter a valid email address');
       return;
     }
 
@@ -697,107 +693,145 @@ class _SignUpScreenState extends State<SignUpScreen> {
     });
 
     try {
-      String phoneNumber = '+91${_mobileController.text.trim()}';
+      // Get form data
+      final email = _emailController.text.trim();
+      final username = _usernameController.text.trim();
+      final fullName = _fullNameController.text.trim();
+      final phoneNumber = _mobileController.text.trim();
 
-      await _auth.verifyPhoneNumber(
-        phoneNumber: phoneNumber,
-        verificationCompleted: (PhoneAuthCredential credential) async {
-          // Auto-verification (Android only)
-          try {
-            await _auth.signInWithCredential(credential);
+      // Check if email is already in use
+      final isEmailAvailable = await _authService.isEmailAvailable(email);
+      if (!isEmailAvailable) {
+        setState(() {
+          _isLoading = false;
+        });
+        showSnackBar(context, 'This email is already registered. Please log in instead.');
+        return;
+      }
 
-            // FIXED: Now saving user data during auto-verification
-            await saveUserData();
+      // Check if username is taken
+      final isUsernameAvailable = await _authService.isUsernameAvailable(username);
+      if (!isUsernameAvailable) {
+        setState(() {
+          _isLoading = false;
+        });
+        showSnackBar(context, 'Username is already taken. Please choose another.');
+        return;
+      }
 
-            if (mounted) {
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ChooseRoleScreen(
-                    userName: _fullNameController.text.trim(),
-                  ),
-                ),
-                (route) => false,
-              );
-            }
-          } catch (e) {
-            showSnackBar(context, 'Auto-verification failed: $e');
-            setState(() {
-              _isLoading = false;
-            });
-          }
-        },
-        verificationFailed: (FirebaseAuthException e) {
-          setState(() {
-            _isLoading = false;
-          });
-          showSnackBar(context, e.message ?? 'Verification failed');
-        },
-        codeSent: (String verificationId, int? resendToken) async {
-          setState(() {
-            _isLoading = false;
-          });
+      // Generate a temporary password (user can change it later)
+      // In production, you'd ask user to create a password
+      final tempPassword = 'KalmGhar2024!'; // Temporary - user will set password after first login
 
-          // Navigate to OTP screen
-          if (mounted) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => SignUpOTPScreen(
-                  phoneNumber: _mobileController.text.trim(),
-                  verificationId: verificationId,
-                  userData: {
-                    'username': _usernameController.text.trim(),
-                    'fullName': _fullNameController.text.trim(),
-                    'email': _emailController.text.trim(),
-                    'phoneNumber': _mobileController.text.trim(),
-                  },
-                ),
-              ),
-            );
-          }
-        },
-        codeAutoRetrievalTimeout: (String verificationId) {
-          print('Auto retrieval timeout');
-        },
-        timeout: const Duration(seconds: 60),
+      // Create Firebase Auth user with email/password (NO BILLING REQUIRED)
+      print('📧 Creating account with email/password auth (no SMS, no billing)...');
+      final userCredential = await _authService.signUpWithEmailAndPassword(
+        email: email,
+        password: tempPassword,
       );
+
+      print('✅ Firebase Auth user created: ${userCredential.user?.uid}');
+
+      // Save user data to Firestore
+      try {
+        await _authService.saveUserData(
+          username: username,
+          fullName: fullName,
+          email: email,
+          phoneNumber: phoneNumber.isNotEmpty ? phoneNumber : null,
+        );
+
+        print('✅ User data saved to Firestore');
+
+        // Navigate to role selection
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ChooseRoleScreen(
+                userName: fullName,
+              ),
+            ),
+            (route) => false,
+          );
+        }
+      } catch (firestoreError) {
+        // ROLLBACK: Delete auth user if Firestore save fails
+        print('❌ Firestore save failed, rolling back auth user...');
+        try {
+          await userCredential.user?.delete();
+          print('🗑️  Auth user deleted (rollback successful)');
+        } catch (deleteError) {
+          print('⚠️  Could not rollback auth user: $deleteError');
+        }
+        
+        setState(() {
+          _isLoading = false;
+        });
+        showSnackBar(context, 'Failed to create account. Please try again.');
+      }
+    } on Exception catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      showSnackBar(context, e.toString());
+      print('Sign-up error: $e');
     } catch (e) {
       setState(() {
         _isLoading = false;
       });
-      showSnackBar(context, 'Error: $e');
+      showSnackBar(context, 'An unexpected error occurred. Please try again.');
+      print('Unexpected error: $e');
     }
   }
 
   Future<void> saveUserData() async {
+    User? currentUser = _auth.currentUser;
+    
     try {
-      // Get the current user's UID from Firebase Auth
-      String? uid = _auth.currentUser?.uid;
-
-      if (uid == null) {
-        throw Exception('User not authenticated');
+      // Wait a bit to ensure authentication is complete
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      // Ensure user is authenticated before saving
+      if (currentUser == null) {
+        throw Exception('User not authenticated - Please try again');
       }
 
-      // Save user data to Firestore using UID as document ID
-      await _firestore
-          .collection('users')
-          .doc(_usernameController.text.trim())
-          .set({
-            'username': _usernameController.text.trim(),
-            'email': _emailController.text.trim(),
-            'phoneNumber': _mobileController.text.trim(),
-            'fullName': _fullNameController.text.trim(),
-            'createdAt': FieldValue.serverTimestamp(),
-          });
+      print('📝 Saving user data for UID: ${currentUser.uid}');
 
-      print('User data saved successfully');
+      try {
+        await _authService.saveUserData(
+          username: _usernameController.text.trim(),
+          fullName: _fullNameController.text.trim(),
+          email: _emailController.text.trim(),
+          phoneNumber: _mobileController.text.trim(),
+        );
+        
+        print('✅ User data saved successfully');
+      } catch (firestoreError) {
+        // Rollback: Delete the authenticated user if Firestore save fails
+        print('❌ Firestore save failed, rolling back authentication: $firestoreError');
+        try {
+          await currentUser.delete();
+          print('🗑️  Auth user deleted successfully');
+        } catch (deleteError) {
+          print('⚠️  Could not delete auth user: $deleteError');
+        }
+        
+        if (mounted) {
+          showSnackBar(context, 'Failed to create account. Please try again.');
+        }
+        rethrow;
+      }
     } catch (e) {
-      print('Error saving user data: $e');
-      // Optionally show error to user
+      print('❌ Error saving user data: $e');
       if (mounted) {
-        showSnackBar(context, 'Warning: Could not save user data');
+        showSnackBar(context, 'Warning: Could not save user data: $e');
       }
+      rethrow;
     }
   }
 
@@ -1015,7 +1049,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: (_acceptTerms && !_isLoading)
-                        ? initiatePhoneAuth
+                        ? createAccount
                         : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF283891),
@@ -1182,39 +1216,86 @@ class _SignUpOTPScreenState extends State<SignUpOTPScreen> {
       await saveUserData();
 
       if (mounted) {
+        // Pass the actual userName from userData
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(
-            builder: (context) => const ChooseRoleScreen(userName: 'username'),
+            builder: (context) => ChooseRoleScreen(
+              userName: widget.userData['fullName'] ?? 'User',
+            ),
           ),
           (route) => false,
         );
       }
     } on FirebaseAuthException catch (e) {
-      showSnackBar(context, e.message ?? 'Invalid OTP');
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isVerifying = false;
-        });
-      }
+      String errorMessage = _getOTPErrorMessage(e.code);
+      showSnackBar(context, errorMessage);
+      setState(() {
+        _isVerifying = false;
+      });
+    } catch (e) {
+      showSnackBar(context, 'Error during sign up: $e');
+      setState(() {
+        _isVerifying = false;
+      });
+    }
+  }
+
+  String _getOTPErrorMessage(String errorCode) {
+    switch (errorCode) {
+      case 'invalid-verification-code':
+        return 'Invalid OTP code. Please try again.';
+      case 'code-expired':
+        return 'Verification code has expired. Please request a new one.';
+      case 'session-expired':
+        return 'Verification session expired. Please try again.';
+      case 'too-many-requests':
+        return 'Too many attempts. Please try again later.';
+      default:
+        return 'Verification failed. Please try again.';
     }
   }
 
   Future<void> saveUserData() async {
+    User? currentUser = _auth.currentUser;
+    
     try {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(widget.userData['username'])
-          .set({
-            'email': widget.userData['email'],
-            'username': widget.userData['username'],
-            'phone': widget.userData['phoneNumber'],
-            'name': widget.userData['fullName'],
-            'createdAt': FieldValue.serverTimestamp(),
-          });
+      // Wait a bit to ensure authentication is complete
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      // Ensure user is authenticated
+      if (currentUser == null) {
+        throw Exception('User not authenticated - Please try again');
+      }
+
+      print('📝 Saving user data for UID: ${currentUser.uid}');
+
+      final AuthService authService = AuthService();
+      
+      try {
+        await authService.saveUserData(
+          username: widget.userData['username'] ?? '',
+          fullName: widget.userData['fullName'] ?? '',
+          email: widget.userData['email'] ?? '',
+          phoneNumber: widget.userData['phoneNumber'] ?? '',
+        );
+        
+        print('✅ User data saved successfully');
+      } catch (firestoreError) {
+        // Rollback: Delete the authenticated user if Firestore save fails
+        print('❌ Firestore save failed, rolling back authentication: $firestoreError');
+        try {
+          await currentUser.delete();
+          print('🗑️  Auth user deleted successfully');
+        } catch (deleteError) {
+          print('⚠️  Could not delete auth user: $deleteError');
+        }
+        rethrow;
+      }
     } catch (e) {
-      print('Error saving user data: $e');
+      print('❌ Error saving user data: $e');
+      // Re-throw to handle in calling function
+      rethrow;
     }
   }
 

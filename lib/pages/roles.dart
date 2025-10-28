@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import 'home.dart';
+<<<<<<< HEAD
+=======
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../services/auth_service.dart';
+>>>>>>> 17f13d10bc8cd790ce5758ab127778bd5473bb53
 
 // Screen 1: Choose Role
 class ChooseRoleScreen extends StatelessWidget {
@@ -7,6 +12,45 @@ class ChooseRoleScreen extends StatelessWidget {
 
   const ChooseRoleScreen({super.key, required this.userName});
 
+<<<<<<< HEAD
+=======
+  Future<void> _updateUserRole(BuildContext context, String role) async {
+    try {
+      final authService = AuthService();
+      // Update the user's role in Firestore
+      await authService.updateUserType(role);
+
+      // Navigate to the appropriate screen based on role
+      if (!context.mounted) return;
+
+      if (role == 'employee') {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => JobSeekerProfileScreen(userName: userName),
+          ),
+        );
+      } else {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => JobProviderProfileScreen(userName: userName),
+          ),
+        );
+      }
+    } catch (e) {
+      // Handle error
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error saving role: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+>>>>>>> 17f13d10bc8cd790ce5758ab127778bd5473bb53
   @override
   Widget build(BuildContext context) {
     return Scaffold(

@@ -321,7 +321,7 @@ class _HomePageState extends State<HomePage> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   _iconLabel('assets/images/cook.png', 'Need a cook'),
-                  _iconLabel('assets/images/plumbing.png', 'Spa'),
+                  _iconLabel('assets/images/plumbing.png', 'Plumbing'),
                   _iconLabel('assets/images/helper.png', 'Household helper'),
                   _iconLabel('assets/images/washing.png', 'Cleaning'),
                   _iconLabel('assets/images/electrician.png', 'Electrician'),
