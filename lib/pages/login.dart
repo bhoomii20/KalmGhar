@@ -670,7 +670,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   // NEW SIGN-UP METHOD: Email/Password (No billing required)
-  // 
+  //
   // FIX: Replaced phone SMS auth with email/password to eliminate "billing not enabled" error
   // This allows brand-new users to register without requiring Firebase billing
   Future<void> createAccount() async {
@@ -683,7 +683,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
     }
 
     // Validate email format
-    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(_emailController.text.trim())) {
+    if (!RegExp(
+      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+    ).hasMatch(_emailController.text.trim())) {
       showSnackBar(context, 'Please enter a valid email address');
       return;
     }
@@ -705,26 +707,37 @@ class _SignUpScreenState extends State<SignUpScreen> {
         setState(() {
           _isLoading = false;
         });
-        showSnackBar(context, 'This email is already registered. Please log in instead.');
+        showSnackBar(
+          context,
+          'This email is already registered. Please log in instead.',
+        );
         return;
       }
 
       // Check if username is taken
-      final isUsernameAvailable = await _authService.isUsernameAvailable(username);
+      final isUsernameAvailable = await _authService.isUsernameAvailable(
+        username,
+      );
       if (!isUsernameAvailable) {
         setState(() {
           _isLoading = false;
         });
-        showSnackBar(context, 'Username is already taken. Please choose another.');
+        showSnackBar(
+          context,
+          'Username is already taken. Please choose another.',
+        );
         return;
       }
 
       // Generate a temporary password (user can change it later)
       // In production, you'd ask user to create a password
-      final tempPassword = 'KalmGhar2024!'; // Temporary - user will set password after first login
+      final tempPassword =
+          'KalmGhar2024!'; // Temporary - user will set password after first login
 
       // Create Firebase Auth user with email/password (NO BILLING REQUIRED)
-      print('📧 Creating account with email/password auth (no SMS, no billing)...');
+      print(
+        '📧 Creating account with email/password auth (no SMS, no billing)...',
+      );
       final userCredential = await _authService.signUpWithEmailAndPassword(
         email: email,
         password: tempPassword,
@@ -751,9 +764,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(
-              builder: (context) => ChooseRoleScreen(
-                userName: fullName,
-              ),
+              builder: (context) => ChooseRoleScreen(userName: fullName),
             ),
             (route) => false,
           );
@@ -767,7 +778,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         } catch (deleteError) {
           print('⚠️  Could not rollback auth user: $deleteError');
         }
-        
+
         setState(() {
           _isLoading = false;
         });
@@ -790,11 +801,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   Future<void> saveUserData() async {
     User? currentUser = _auth.currentUser;
-    
+
     try {
       // Wait a bit to ensure authentication is complete
       await Future.delayed(const Duration(milliseconds: 500));
-      
+
       // Ensure user is authenticated before saving
       if (currentUser == null) {
         throw Exception('User not authenticated - Please try again');
@@ -809,18 +820,20 @@ class _SignUpScreenState extends State<SignUpScreen> {
           email: _emailController.text.trim(),
           phoneNumber: _mobileController.text.trim(),
         );
-        
+
         print('✅ User data saved successfully');
       } catch (firestoreError) {
         // Rollback: Delete the authenticated user if Firestore save fails
-        print('❌ Firestore save failed, rolling back authentication: $firestoreError');
+        print(
+          '❌ Firestore save failed, rolling back authentication: $firestoreError',
+        );
         try {
           await currentUser.delete();
           print('🗑️  Auth user deleted successfully');
         } catch (deleteError) {
           print('⚠️  Could not delete auth user: $deleteError');
         }
-        
+
         if (mounted) {
           showSnackBar(context, 'Failed to create account. Please try again.');
         }
@@ -1258,11 +1271,11 @@ class _SignUpOTPScreenState extends State<SignUpOTPScreen> {
 
   Future<void> saveUserData() async {
     User? currentUser = _auth.currentUser;
-    
+
     try {
       // Wait a bit to ensure authentication is complete
       await Future.delayed(const Duration(milliseconds: 500));
-      
+
       // Ensure user is authenticated
       if (currentUser == null) {
         throw Exception('User not authenticated - Please try again');
@@ -1271,7 +1284,7 @@ class _SignUpOTPScreenState extends State<SignUpOTPScreen> {
       print('📝 Saving user data for UID: ${currentUser.uid}');
 
       final AuthService authService = AuthService();
-      
+
       try {
         await authService.saveUserData(
           username: widget.userData['username'] ?? '',
@@ -1279,11 +1292,13 @@ class _SignUpOTPScreenState extends State<SignUpOTPScreen> {
           email: widget.userData['email'] ?? '',
           phoneNumber: widget.userData['phoneNumber'] ?? '',
         );
-        
+
         print('✅ User data saved successfully');
       } catch (firestoreError) {
         // Rollback: Delete the authenticated user if Firestore save fails
-        print('❌ Firestore save failed, rolling back authentication: $firestoreError');
+        print(
+          '❌ Firestore save failed, rolling back authentication: $firestoreError',
+        );
         try {
           await currentUser.delete();
           print('🗑️  Auth user deleted successfully');

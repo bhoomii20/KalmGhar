@@ -44,16 +44,16 @@ class _FeedPageState extends State<FeedPage> {
     return GestureDetector(
       onTap: () {
         // Show job details modal from reusable widget
-                    showJobDetailsModal(
-                      context: context,
-                      jobTitle: job['title'] ?? '',
-                      jobDescription: job['description'] ?? '',
-                      location: job['location'] ?? 'Bicholim, Goa',
-                      date: job['date'] ?? '',
-                      time: job['time'] ?? '',
-                      price: job['price'] ?? '₹800',
-                      showInterestedButton: true, // Show Interested button in Feed
-                    );
+        showJobDetailsModal(
+          context: context,
+          jobTitle: job['title'] ?? '',
+          jobDescription: job['description'] ?? '',
+          location: job['location'] ?? 'Bicholim, Goa',
+          date: job['date'] ?? '',
+          time: job['time'] ?? '',
+          price: job['price'] ?? '₹800',
+          showInterestedButton: true, // Show Interested button in Feed
+        );
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
@@ -283,7 +283,9 @@ class _FeedPageState extends State<FeedPage> {
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(
-                      child: CircularProgressIndicator(color: Color(0xFF283891)),
+                      child: CircularProgressIndicator(
+                        color: Color(0xFF283891),
+                      ),
                     );
                   }
 
@@ -297,7 +299,7 @@ class _FeedPageState extends State<FeedPage> {
                   }
 
                   final jobs = snapshot.data ?? [];
-                  
+
                   if (jobs.isEmpty) {
                     return const Center(
                       child: Text(

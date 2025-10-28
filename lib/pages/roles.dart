@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'home.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/auth_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 // Screen 1: Choose Role
 class ChooseRoleScreen extends StatelessWidget {
@@ -12,9 +13,17 @@ class ChooseRoleScreen extends StatelessWidget {
 
   Future<void> _updateUserRole(BuildContext context, String role) async {
     try {
-      final authService = AuthService();
-      // Update the user's role in Firestore
-      await authService.updateUserType(role);
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+
+      if (userId == null) {
+        throw Exception('User not authenticated');
+      }
+
+      // Update the user's role in Firestore users collection
+      await FirebaseFirestore.instance.collection('users').doc(userId).update({
+        'userType': role,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
 
       // Navigate to the appropriate screen based on role
       if (!context.mounted) return;
@@ -35,7 +44,6 @@ class ChooseRoleScreen extends StatelessWidget {
         );
       }
     } catch (e) {
-      // Handle error
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -73,21 +81,11 @@ class ChooseRoleScreen extends StatelessWidget {
                   color: Colors.black87,
                 ),
               ),
-
               const SizedBox(height: 60),
 
-              // Looking to Hire card
+              // Looking for Work card
               GestureDetector(
-                onTap: () {
-                  _updateUserRole(context, 'employer');
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          JobProviderProfileScreen(userName: userName),
-                    ),
-                  );
-                },
+                onTap: () => _updateUserRole(context, 'employee'),
                 child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(24),
@@ -113,21 +111,11 @@ class ChooseRoleScreen extends StatelessWidget {
                   ),
                 ),
               ),
-
               const SizedBox(height: 24),
 
-              // Looking for Work card
+              // Looking to Hire card
               GestureDetector(
-                onTap: () {
-                  _updateUserRole(context, 'employee');
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          JobSeekerProfileScreen(userName: userName),
-                    ),
-                  );
-                },
+                onTap: () => _updateUserRole(context, 'employer'),
                 child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(24),
@@ -175,6 +163,7 @@ class _JobSeekerProfileScreenState extends State<JobSeekerProfileScreen> {
   final TextEditingController _employeeIdController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
   final TextEditingController _languageController = TextEditingController();
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -182,6 +171,65 @@ class _JobSeekerProfileScreenState extends State<JobSeekerProfileScreen> {
     _locationController.dispose();
     _languageController.dispose();
     super.dispose();
+  }
+
+  Future<void> _saveEmployeeProfile() async {
+    // Validate inputs
+    if (_employeeIdController.text.trim().isEmpty ||
+        _locationController.text.trim().isEmpty ||
+        _languageController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill all fields'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+
+      if (userId == null) {
+        throw Exception('User not authenticated');
+      }
+
+      // Save to employees collection
+      await FirebaseFirestore.instance.collection('employee').doc(userId).set({
+        'uid': userId,
+        'employeeId': _employeeIdController.text.trim(),
+        'location': _locationController.text.trim(),
+        'preferredLanguage': _languageController.text.trim(),
+        'profilePictureUrl': '', // Will be updated when image is uploaded
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      if (!mounted) return;
+
+      // Navigate to skills screen
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) =>
+              AddSkillsScreen(userName: widget.userName, isJobSeeker: true),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error saving profile: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -203,7 +251,6 @@ class _JobSeekerProfileScreenState extends State<JobSeekerProfileScreen> {
             child: Column(
               children: [
                 const SizedBox(height: 20),
-
                 Text(
                   'Welcome ${widget.userName}',
                   style: const TextStyle(
@@ -213,14 +260,9 @@ class _JobSeekerProfileScreenState extends State<JobSeekerProfileScreen> {
                     color: Colors.black87,
                   ),
                 ),
-
                 const SizedBox(height: 40),
-
-                // Illustration
                 Image.asset('assets/images/ghar2.png', height: 150),
-
                 const SizedBox(height: 30),
-
                 const Text(
                   'Create your job-seeker profile',
                   style: TextStyle(
@@ -230,7 +272,6 @@ class _JobSeekerProfileScreenState extends State<JobSeekerProfileScreen> {
                     color: Colors.black87,
                   ),
                 ),
-
                 const SizedBox(height: 32),
 
                 // Employee ID field
@@ -259,7 +300,6 @@ class _JobSeekerProfileScreenState extends State<JobSeekerProfileScreen> {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 16),
 
                 // Location field
@@ -288,7 +328,6 @@ class _JobSeekerProfileScreenState extends State<JobSeekerProfileScreen> {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 16),
 
                 // Preferred Language field
@@ -317,7 +356,6 @@ class _JobSeekerProfileScreenState extends State<JobSeekerProfileScreen> {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 20),
 
                 // Upload profile picture
@@ -329,9 +367,7 @@ class _JobSeekerProfileScreenState extends State<JobSeekerProfileScreen> {
                     color: Colors.black87,
                   ),
                 ),
-
                 const SizedBox(height: 12),
-
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 20),
@@ -349,51 +385,49 @@ class _JobSeekerProfileScreenState extends State<JobSeekerProfileScreen> {
                     ],
                   ),
                 ),
-
                 const SizedBox(height: 32),
 
                 // Next button
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => AddSkillsScreen(
-                            userName: widget.userName,
-                            isJobSeeker: true,
-                          ),
-                        ),
-                      );
-                    },
+                    onPressed: _isLoading ? null : _saveEmployeeProfile,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF283891),
                       foregroundColor: Colors.white,
+                      disabledBackgroundColor: Colors.grey[400],
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                       elevation: 0,
                     ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Next',
-                          style: TextStyle(
-                            fontFamily: 'Axiforma',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'Next',
+                                style: TextStyle(
+                                  fontFamily: 'Axiforma',
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              SizedBox(width: 8),
+                              Icon(Icons.arrow_forward, size: 20),
+                            ],
                           ),
-                        ),
-                        SizedBox(width: 8),
-                        Icon(Icons.arrow_forward, size: 20),
-                      ],
-                    ),
                   ),
                 ),
-
                 const SizedBox(height: 30),
               ],
             ),
@@ -404,7 +438,7 @@ class _JobSeekerProfileScreenState extends State<JobSeekerProfileScreen> {
   }
 }
 
-// Screen 3 & 4: Add Skills Screen (with two states)
+// Screen 3 & 4: Add Skills Screen
 class AddSkillsScreen extends StatefulWidget {
   final String userName;
   final bool isJobSeeker;
@@ -430,6 +464,7 @@ class _AddSkillsScreenState extends State<AddSkillsScreen> {
   ];
   bool _showDropdown = false;
   bool _showOtherField = false;
+  bool _isLoading = false;
   final TextEditingController _otherSkillController = TextEditingController();
 
   void _toggleSkill(String skill) {
@@ -440,6 +475,58 @@ class _AddSkillsScreenState extends State<AddSkillsScreen> {
         _selectedSkills.add(skill);
       }
     });
+  }
+
+  Future<void> _saveSkills() async {
+    if (_selectedSkills.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select at least one skill'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+
+      if (userId == null) {
+        throw Exception('User not authenticated');
+      }
+
+      // Update skills in employees collection
+      await FirebaseFirestore.instance
+          .collection('employee')
+          .doc(userId)
+          .update({
+            'skills': _selectedSkills,
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+
+      if (!mounted) return;
+
+      // Navigate to home
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const HomePage()),
+        (route) => false,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error saving skills: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -460,7 +547,6 @@ class _AddSkillsScreenState extends State<AddSkillsScreen> {
           child: Column(
             children: [
               const SizedBox(height: 20),
-
               Text(
                 'Welcome ${widget.userName}',
                 style: const TextStyle(
@@ -470,14 +556,9 @@ class _AddSkillsScreenState extends State<AddSkillsScreen> {
                   color: Colors.black87,
                 ),
               ),
-
               const SizedBox(height: 40),
-
-              // Illustration
               Image.asset('assets/images/ghar2.png', height: 150),
-
               const SizedBox(height: 30),
-
               const Text(
                 'Add your skills',
                 style: TextStyle(
@@ -487,7 +568,6 @@ class _AddSkillsScreenState extends State<AddSkillsScreen> {
                   color: Colors.black87,
                 ),
               ),
-
               const SizedBox(height: 24),
 
               // Selected skills chips
@@ -510,7 +590,6 @@ class _AddSkillsScreenState extends State<AddSkillsScreen> {
                     );
                   }).toList(),
                 ),
-
               const SizedBox(height: 16),
 
               // Skills dropdown button
@@ -563,51 +642,47 @@ class _AddSkillsScreenState extends State<AddSkillsScreen> {
                     border: Border.all(color: Colors.grey[300]!),
                   ),
                   child: Column(
-                    children: [
-                      ..._availableSkills.map((skill) {
-                        if (skill == 'Add Other...') {
-                          return ListTile(
-                            title: Text(
-                              skill,
-                              style: const TextStyle(
-                                fontFamily: 'Axiforma',
-                                fontSize: 15,
-                              ),
+                    children: _availableSkills.map((skill) {
+                      if (skill == 'Add Other...') {
+                        return ListTile(
+                          title: Text(
+                            skill,
+                            style: const TextStyle(
+                              fontFamily: 'Axiforma',
+                              fontSize: 15,
                             ),
-                            trailing: Icon(
-                              Icons.add_circle_outline,
-                              color: Colors.grey[700],
+                          ),
+                          trailing: Icon(
+                            Icons.add_circle_outline,
+                            color: Colors.grey[700],
+                          ),
+                          onTap: () {
+                            setState(() {
+                              _showOtherField = true;
+                              _showDropdown = false;
+                            });
+                          },
+                        );
+                      } else {
+                        return ListTile(
+                          title: Text(
+                            skill,
+                            style: const TextStyle(
+                              fontFamily: 'Axiforma',
+                              fontSize: 15,
                             ),
-                            onTap: () {
-                              setState(() {
-                                _showOtherField = true;
-                                _showDropdown = false;
-                              });
-                            },
-                          );
-                        } else {
-                          return ListTile(
-                            title: Text(
-                              skill,
-                              style: const TextStyle(
-                                fontFamily: 'Axiforma',
-                                fontSize: 15,
-                              ),
-                            ),
-                            trailing: Icon(
-                              Icons.add_circle_outline,
-                              color: Colors.grey[700],
-                            ),
-                            onTap: () {
-                              _toggleSkill(skill);
-                              setState(() {
-                                _showDropdown = false;
-                              });
-                            },
-                          );
-                        }
-                      }).toList(),
-                    ],
+                          ),
+                          trailing: Icon(
+                            Icons.add_circle_outline,
+                            color: Colors.grey[700],
+                          ),
+                          onTap: () {
+                            _toggleSkill(skill);
+                            setState(() => _showDropdown = false);
+                          },
+                        );
+                      }
+                    }).toList(),
                   ),
                 ),
 
@@ -651,17 +726,8 @@ class _AddSkillsScreenState extends State<AddSkillsScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _selectedSkills.isNotEmpty
-                      ? () {
-                          // Navigate to home
-                          Navigator.pushAndRemoveUntil(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const HomePage(),
-                            ),
-                            (route) => false,
-                          );
-                        }
+                  onPressed: (_selectedSkills.isNotEmpty && !_isLoading)
+                      ? _saveSkills
                       : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF283891),
@@ -673,17 +739,25 @@ class _AddSkillsScreenState extends State<AddSkillsScreen> {
                     ),
                     elevation: 0,
                   ),
-                  child: const Text(
-                    'Update',
-                    style: TextStyle(
-                      fontFamily: 'Axiforma',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text(
+                          'Update',
+                          style: TextStyle(
+                            fontFamily: 'Axiforma',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                 ),
               ),
-
               const SizedBox(height: 30),
             ],
           ),
@@ -707,12 +781,66 @@ class JobProviderProfileScreen extends StatefulWidget {
 class _JobProviderProfileScreenState extends State<JobProviderProfileScreen> {
   final TextEditingController _employerIdController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
+  bool _isLoading = false;
 
   @override
   void dispose() {
     _employerIdController.dispose();
     _locationController.dispose();
     super.dispose();
+  }
+
+  Future<void> _saveEmployerProfile() async {
+    // Validate inputs
+    if (_employerIdController.text.trim().isEmpty ||
+        _locationController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill all fields'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+
+      if (userId == null) {
+        throw Exception('User not authenticated');
+      }
+
+      // Save to employees collection
+      await FirebaseFirestore.instance.collection('employer').doc(userId).set({
+        'uid': userId,
+        'employeeId': _employerIdController.text.trim(),
+        'location': _locationController.text.trim(),
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      if (!mounted) return;
+
+      // Navigate to home screen
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const HomePage()),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error saving profile: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -826,15 +954,7 @@ class _JobProviderProfileScreenState extends State<JobProviderProfileScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const HomePage(),
-                        ),
-                        (route) => false,
-                      );
-                    },
+                    onPressed: _isLoading ? null : _saveEmployerProfile,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF283891),
                       foregroundColor: Colors.white,
@@ -844,14 +964,23 @@ class _JobProviderProfileScreenState extends State<JobProviderProfileScreen> {
                       ),
                       elevation: 0,
                     ),
-                    child: const Text(
-                      'Log In',
-                      style: TextStyle(
-                        fontFamily: 'Axiforma',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Text(
+                            'Log In',
+                            style: TextStyle(
+                              fontFamily: 'Axiforma',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                   ),
                 ),
 
