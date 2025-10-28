@@ -84,7 +84,7 @@ class ChooseRoleScreen extends StatelessWidget {
 
               // Looking for Work card
               GestureDetector(
-                onTap: () => _updateUserRole(context, 'employee'),
+                onTap: () => _updateUserRole(context, 'employer'),
                 child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(24),
@@ -114,7 +114,7 @@ class ChooseRoleScreen extends StatelessWidget {
 
               // Looking to Hire card
               GestureDetector(
-                onTap: () => _updateUserRole(context, 'employer'),
+                onTap: () => _updateUserRole(context, 'employee'),
                 child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(24),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/bottom_nav_bar.dart';
 import '../widgets/job_details.dart';
 import '../pages/pending_activities.dart';
@@ -53,6 +54,7 @@ class _FeedPageState extends State<FeedPage> {
           time: job['time'] ?? '',
           price: job['price'] ?? '₹800',
           showInterestedButton: true, // Show Interested button in Feed
+          onInterested: () => _handleInterested(job),
         );
       },
       child: Container(
@@ -323,6 +325,71 @@ class _FeedPageState extends State<FeedPage> {
         ),
       ),
     );
+  }
+
+  Future<void> _handleInterested(Map<String, dynamic> job) async {
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please sign in to continue'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      final String currentUserId = currentUser.uid;
+      final String jobOwnerId = (job['userId'] ?? '').toString();
+
+      if (jobOwnerId.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Missing job owner information'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      // Prevent self-booking
+      if (jobOwnerId == currentUserId) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("You can't mark interest on your own post"),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      // Always record the clicker as employee and post owner as employer
+      await _firestoreService.saveBooking(
+        employerId: jobOwnerId,
+        employeeId: currentUserId,
+        service: (job['title'] ?? '').toString(),
+        scheduledOn: (job['date'] ?? '').toString(),
+        time: (job['time'] ?? '').toString(),
+        amount: (job['price'] ?? '').toString(),
+      );
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Interest recorded! Booking created.'),
+          backgroundColor: Color(0xFF283891),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error creating booking: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 }
 

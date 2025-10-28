@@ -21,8 +21,12 @@ class FirestoreService {
       }
 
       // Validate required fields
-      if (title.isEmpty || description.isEmpty || location.isEmpty || 
-          date.isEmpty || time.isEmpty || price.isEmpty) {
+      if (title.isEmpty ||
+          description.isEmpty ||
+          location.isEmpty ||
+          date.isEmpty ||
+          time.isEmpty ||
+          price.isEmpty) {
         throw Exception('All fields are required');
       }
 
@@ -52,20 +56,20 @@ class FirestoreService {
           .orderBy('createdAt', descending: true)
           .snapshots()
           .map((snapshot) {
-        return snapshot.docs.map((doc) {
-          final data = doc.data();
-          return {
-            'id': doc.id,
-            'title': data['title'] ?? '',
-            'date': data['date'] ?? '',
-            'time': data['time'] ?? '',
-            'description': data['description'] ?? '',
-            'location': data['location'] ?? '',
-            'price': data['price'] ?? '',
-            'userId': data['userId'] ?? '',
-          };
-        }).toList();
-      });
+            return snapshot.docs.map((doc) {
+              final data = doc.data();
+              return {
+                'id': doc.id,
+                'title': data['title'] ?? '',
+                'date': data['date'] ?? '',
+                'time': data['time'] ?? '',
+                'description': data['description'] ?? '',
+                'location': data['location'] ?? '',
+                'price': data['price'] ?? '',
+                'userId': data['userId'] ?? '',
+              };
+            }).toList();
+          });
     } catch (e) {
       print('Error fetching feed: $e');
       return Stream.value([]);
@@ -88,7 +92,10 @@ class FirestoreService {
       }
 
       // Validate required fields
-      if (service.isEmpty || scheduledOn.isEmpty || time.isEmpty || amount.isEmpty) {
+      if (service.isEmpty ||
+          scheduledOn.isEmpty ||
+          time.isEmpty ||
+          amount.isEmpty) {
         throw Exception('All booking fields are required');
       }
 
@@ -119,7 +126,9 @@ class FirestoreService {
       }
 
       // Determine which field to query based on user type
-      String queryField = userType == 'Employer' ? 'employer_id' : 'employee_id';
+      String queryField = userType == 'Employer'
+          ? 'employer_id'
+          : 'employee_id';
 
       return _firestore
           .collection('bookings')
@@ -127,32 +136,32 @@ class FirestoreService {
           .orderBy('createdAt', descending: true)
           .snapshots()
           .map((snapshot) {
-        return snapshot.docs.map((doc) {
-          final data = doc.data();
-          
-          // Convert Firestore timestamp to readable date
-          String scheduledDate = 'N/A';
-          if (data['scheduledOn'] != null) {
-            if (data['scheduledOn'] is Timestamp) {
-              scheduledDate = (data['scheduledOn'] as Timestamp)
-                  .toDate()
-                  .toString()
-                  .split(' ')[0];
-            } else {
-              scheduledDate = data['scheduledOn'].toString();
-            }
-          }
+            return snapshot.docs.map((doc) {
+              final data = doc.data();
 
-          return {
-            'booking_id': doc.id,
-            'service': data['service'] ?? '',
-            'scheduledOn': scheduledDate,
-            'time': data['time'] ?? '',
-            'amount': data['amount'] ?? '',
-            'scheduledTimestamp': data['scheduledOn'],
-          };
-        }).toList();
-      });
+              // Convert Firestore timestamp to readable date
+              String scheduledDate = 'N/A';
+              if (data['scheduledOn'] != null) {
+                if (data['scheduledOn'] is Timestamp) {
+                  scheduledDate = (data['scheduledOn'] as Timestamp)
+                      .toDate()
+                      .toString()
+                      .split(' ')[0];
+                } else {
+                  scheduledDate = data['scheduledOn'].toString();
+                }
+              }
+
+              return {
+                'booking_id': doc.id,
+                'service': data['service'] ?? '',
+                'scheduledOn': scheduledDate,
+                'time': data['time'] ?? '',
+                'amount': data['amount'] ?? '',
+                'scheduledTimestamp': data['scheduledOn'],
+              };
+            }).toList();
+          });
     } catch (e) {
       print('Error fetching bookings: $e');
       return Stream.value([]);
@@ -167,7 +176,10 @@ class FirestoreService {
         return null;
       }
 
-      DocumentSnapshot doc = await _firestore.collection('users').doc(uid).get();
+      DocumentSnapshot doc = await _firestore
+          .collection('users')
+          .doc(uid)
+          .get();
       if (doc.exists) {
         return doc.data() as Map<String, dynamic>?;
       }
@@ -196,4 +208,3 @@ class FirestoreService {
     }
   }
 }
-
