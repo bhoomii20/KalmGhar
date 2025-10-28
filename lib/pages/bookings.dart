@@ -4,6 +4,7 @@ import '../widgets/job_details.dart';
 import '../pages/feedback_review.dart';
 import '../pages/pending_activities.dart';
 import '../services/firestore_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class BookingsPage extends StatefulWidget {
   const BookingsPage({super.key});
@@ -13,8 +14,6 @@ class BookingsPage extends StatefulWidget {
 }
 
 class _BookingsPageState extends State<BookingsPage> {
-<<<<<<< HEAD
-=======
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirestoreService _firestoreService = FirestoreService();
 
@@ -47,7 +46,6 @@ class _BookingsPageState extends State<BookingsPage> {
     return _firestoreService.getBookings(_userType);
   }
 
->>>>>>> 17f13d10bc8cd790ce5758ab127778bd5473bb53
   String _userType = 'Employer'; // 'Employer' or 'Employee'
   String _selectedTab = 'Upcoming'; // 'Upcoming' or 'Past'
 
@@ -287,7 +285,6 @@ class _BookingsPageState extends State<BookingsPage> {
     );
   }
 
-<<<<<<< HEAD
   List<Map<String, dynamic>> _getCurrentBookings() {
     if (_userType == 'Employer') {
       return _selectedTab == 'Upcoming'
@@ -299,12 +296,9 @@ class _BookingsPageState extends State<BookingsPage> {
           : _employeePastBookings;
     }
   }
-=======
->>>>>>> 17f13d10bc8cd790ce5758ab127778bd5473bb53
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       backgroundColor: Colors.white,
       bottomNavigationBar: const CustomBottomNavBar(currentIndex: 1),
@@ -480,36 +474,26 @@ class _BookingsPageState extends State<BookingsPage> {
 
             const SizedBox(height: 16),
 
-<<<<<<< HEAD
-            // Booking list or empty message
-            Expanded(
-              child: showEmptyState
-                  ? _buildEmptyState('No bookings available.')
-                  : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      itemCount: currentBookings.length,
-                      itemBuilder: (context, index) {
-                        return _buildBookingCard(
-                          currentBookings[index],
-                          _selectedTab == 'Past',
-                        );
-                      },
-                    ),
-=======
             // Bookings list or empty state
-           Expanded(
+            Expanded(
               child: StreamBuilder<List<Map<String, dynamic>>>(
                 stream: fetchBookings(), // Calls the function we created above
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     // Show a loading indicator while data is being fetched
-                    return const Center(child: CircularProgressIndicator(color: Color(0xFF283891)));
+                    return const Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFF283891),
+                      ),
+                    );
                   }
 
                   if (snapshot.hasError) {
                     // Show error message
                     print('Error fetching bookings: ${snapshot.error}');
-                    return _buildEmptyState('Error loading bookings. Please try again.');
+                    return _buildEmptyState(
+                      'Error loading bookings. Please try again.',
+                    );
                   }
 
                   final currentBookings = snapshot.data ?? [];
@@ -519,9 +503,10 @@ class _BookingsPageState extends State<BookingsPage> {
                     return _buildEmptyState(
                       _userType == 'Employee' && _selectedTab == 'Past'
                           ? 'No Past Orders Yet!\nas Employee!'
-                          : _userType == 'Employee' && _selectedTab == 'Upcoming'
-                              ? 'No Upcoming Bookings Found!'
-                              : 'No bookings found',
+                          : _userType == 'Employee' &&
+                                _selectedTab == 'Upcoming'
+                          ? 'No Upcoming Bookings Found!'
+                          : 'No bookings found',
                     );
                   }
 
@@ -538,7 +523,6 @@ class _BookingsPageState extends State<BookingsPage> {
                   );
                 },
               ),
->>>>>>> 17f13d10bc8cd790ce5758ab127778bd5473bb53
             ),
           ],
         ),
