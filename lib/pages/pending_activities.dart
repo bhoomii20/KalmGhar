@@ -14,119 +14,184 @@ class _PendingActivitiesPageState extends State<PendingActivitiesPage> {
       'type': 'job_posted',
       'message': 'A new Job was posted',
       'showButtons': false,
+      'status': null,
     },
     {
       'type': 'interest_received',
       'message': 'Employee abcdf is interested',
       'showButtons': true,
       'employeeName': 'abcdf',
+      'status': null,
     },
     {
       'type': 'job_posted',
       'message': 'A new Job was posted',
       'showButtons': false,
+      'status': 'accepted',
     },
     {
-      'type': 'job_posted',
-      'message': 'A new Job was posted',
+      'type': 'interest_received',
+      'message': 'Employee xyz is interested',
       'showButtons': false,
-    },
-    {
-      'type': 'job_posted',
-      'message': 'A new Job was posted',
-      'showButtons': false,
-    },
-    {
-      'type': 'job_posted',
-      'message': 'A new Job was posted',
-      'showButtons': false,
-    },
-    {
-      'type': 'job_posted',
-      'message': 'A new Job was posted',
-      'showButtons': false,
+      'employeeName': 'xyz',
+      'status': 'declined',
     },
   ];
 
-  Widget _buildActivityItem(Map<String, dynamic> activity) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.grey[300]!, width: 1)),
+  void _deleteActivity(int index) {
+    setState(() {
+      _activities.removeAt(index);
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Activity removed'),
+        backgroundColor: Colors.grey,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            activity['message'],
-            style: const TextStyle(
-              fontFamily: 'Axiforma',
-              fontSize: 15,
-              color: Colors.black87,
-            ),
+    );
+  }
+
+  void _updateActivityStatus(int index, String status) {
+    setState(() {
+      _activities[index]['status'] = status;
+      _activities[index]['showButtons'] = false;
+    });
+  }
+
+  Widget _buildActivityItem(Map<String, dynamic> activity, int index) {
+    final status = activity['status'];
+    Color? statusColor;
+    if (status == 'accepted') {
+      statusColor = Colors.green.withOpacity(0.1);
+    } else if (status == 'declined') {
+      statusColor = Colors.red.withOpacity(0.1);
+    }
+
+    return Dismissible(
+      key: Key('activity_$index'),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        color: Colors.red,
+        child: const Icon(Icons.delete, color: Colors.white),
+      ),
+      onDismissed: (direction) => _deleteActivity(index),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          color: statusColor,
+          border: Border(
+            bottom: BorderSide(color: Colors.grey[300]!, width: 1),
           ),
-          if (activity['showButtons']) ...[
-            const SizedBox(height: 12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      _showNegotiationDialog(activity['employeeName']);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF283891),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      elevation: 0,
+                  child: Text(
+                    activity['message'],
+                    style: const TextStyle(
+                      fontFamily: 'Axiforma',
+                      fontSize: 15,
+                      color: Colors.black87,
                     ),
-                    child: const Text(
-                      'Accept',
-                      style: TextStyle(
+                  ),
+                ),
+                if (status != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: status == 'accepted' ? Colors.green : Colors.red,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      status.toString().toUpperCase(),
+                      style: const TextStyle(
                         fontFamily: 'Axiforma',
-                        fontSize: 14,
+                        fontSize: 12,
+                        color: Colors.white,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Interest declined'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF7C7C9E),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: const Text(
-                      'Decline',
-                      style: TextStyle(
-                        fontFamily: 'Axiforma',
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
               ],
             ),
+
+            // ✅ Buttons section (fixed)
+            if (activity['showButtons'])
+              Column(
+                children: [
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            _updateActivityStatus(index, 'accepted');
+                            _showNegotiationDialog(activity['employeeName']);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF283891),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: const Text(
+                            'Accept',
+                            style: TextStyle(
+                              fontFamily: 'Axiforma',
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            _updateActivityStatus(index, 'declined');
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Interest declined'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF7C7C9E),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: const Text(
+                            'Decline',
+                            style: TextStyle(
+                              fontFamily: 'Axiforma',
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
           ],
-        ],
+        ),
       ),
     );
   }
@@ -292,7 +357,7 @@ class _PendingActivitiesPageState extends State<PendingActivitiesPage> {
             : ListView.builder(
                 itemCount: _activities.length,
                 itemBuilder: (context, index) {
-                  return _buildActivityItem(_activities[index]);
+                  return _buildActivityItem(_activities[index], index);
                 },
               ),
       ),

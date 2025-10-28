@@ -1,8 +1,7 @@
-import '../pages/feedback_review.dart';
 import 'package:flutter/material.dart';
 import '../widgets/bottom_nav_bar.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../widgets/job_details.dart';
+import '../pages/feedback_review.dart';
 import '../pages/pending_activities.dart';
 import '../services/firestore_service.dart';
 
@@ -14,6 +13,8 @@ class BookingsPage extends StatefulWidget {
 }
 
 class _BookingsPageState extends State<BookingsPage> {
+<<<<<<< HEAD
+=======
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirestoreService _firestoreService = FirestoreService();
 
@@ -46,6 +47,7 @@ class _BookingsPageState extends State<BookingsPage> {
     return _firestoreService.getBookings(_userType);
   }
 
+>>>>>>> 17f13d10bc8cd790ce5758ab127778bd5473bb53
   String _userType = 'Employer'; // 'Employer' or 'Employee'
   String _selectedTab = 'Upcoming'; // 'Upcoming' or 'Past'
 
@@ -78,73 +80,53 @@ class _BookingsPageState extends State<BookingsPage> {
       'amount': '₹800',
     },
     {
-      'service': 'General Plumbing',
-      'scheduledOn': '26 September 2025',
-      'time': '3:00 pm to 6:00 pm',
-      'amount': '₹800',
-    },
-    {
-      'service': 'General Plumbing',
-      'scheduledOn': '26 September 2025',
-      'time': '3:00 pm to 6:00 pm',
-      'amount': '₹800',
+      'service': 'House Cleaning',
+      'scheduledOn': '28 September 2025',
+      'time': '9:00 am to 11:00 am',
+      'amount': '₹500',
     },
   ];
 
   final List<Map<String, dynamic>> _employerPastBookings = [
     {
-      'service': 'General Plumbing',
-      'scheduledOn': '28 August 2025',
-      'time': '3:00 pm to 6:00 pm',
-      'amount': '₹800',
-    },
-    {
-      'service': 'General Plumbing',
-      'scheduledOn': '28 August 2025',
-      'time': '3:00 pm to 6:00 pm',
-      'amount': '₹800',
-    },
-    {
       'service': 'Coconut Plucking',
-      'scheduledOn': '28 August 2025',
+      'scheduledOn': '18 August 2025',
       'time': '3:00 pm to 6:00 pm',
-      'amount': '₹800',
+      'amount': '₹700',
     },
     {
-      'service': 'Coconut Plucking',
-      'scheduledOn': '28 August 2025',
-      'time': '3:00 pm to 6:00 pm',
-      'amount': '₹800',
+      'service': 'Garden Maintenance',
+      'scheduledOn': '10 August 2025',
+      'time': '9:00 am to 12:00 pm',
+      'amount': '₹600',
     },
   ];
 
   final List<Map<String, dynamic>> _employeeUpcomingBookings = [
     {
-      'service': 'Coconut Plucking',
+      'service': 'Electrician Work',
       'scheduledOn': '26 September 2025',
       'time': '3:00 pm to 6:00 pm',
-      'amount': '₹800',
+      'amount': '₹1000',
     },
     {
-      'service': 'Coconut Plucking',
-      'scheduledOn': '26 September 2025',
-      'time': '3:00 pm to 6:00 pm',
-      'amount': '₹800',
-    },
-    {
-      'service': 'Coconut Plucking',
-      'scheduledOn': '26 September 2025',
-      'time': '3:00 pm to 6:00 pm',
-      'amount': '₹800',
-    },
-    {
-      'service': 'Coconut Plucking',
-      'scheduledOn': '26 September 2025',
-      'time': '3:00 pm to 6:00 pm',
+      'service': 'Gardening',
+      'scheduledOn': '30 September 2025',
+      'time': '9:00 am to 12:00 pm',
       'amount': '₹800',
     },
   ];
 
+  final List<Map<String, dynamic>> _employeePastBookings = [
+    {
+      'service': 'Furniture Repair',
+      'scheduledOn': '20 August 2025',
+      'time': '10:00 am to 1:00 pm',
+      'amount': '₹900',
+    },
+  ];
+
+  // ✅ Booking card
   Widget _buildBookingCard(Map<String, dynamic> booking, bool isPast) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -221,8 +203,7 @@ class _BookingsPageState extends State<BookingsPage> {
                       date: booking['scheduledOn'] ?? '',
                       time: booking['time'] ?? '',
                       price: booking['amount'] ?? '',
-                      showInterestedButton:
-                          false, // No Interested button in Bookings
+                      showInterestedButton: false,
                     );
                   },
                   style: OutlinedButton.styleFrom(
@@ -257,7 +238,7 @@ class _BookingsPageState extends State<BookingsPage> {
                           builder: (context) => GiveFeedbackPage(
                             serviceName: booking['service'],
                             employeeName:
-                                'Employee Name', // Replace with actual employee name
+                                'Employee Name', // Replace with dynamic data if needed
                           ),
                         ),
                       );
@@ -306,6 +287,20 @@ class _BookingsPageState extends State<BookingsPage> {
     );
   }
 
+<<<<<<< HEAD
+  List<Map<String, dynamic>> _getCurrentBookings() {
+    if (_userType == 'Employer') {
+      return _selectedTab == 'Upcoming'
+          ? _employerUpcomingBookings
+          : _employerPastBookings;
+    } else {
+      return _selectedTab == 'Upcoming'
+          ? _employeeUpcomingBookings
+          : _employeePastBookings;
+    }
+  }
+=======
+>>>>>>> 17f13d10bc8cd790ce5758ab127778bd5473bb53
 
   @override
   Widget build(BuildContext context) {
@@ -485,6 +480,22 @@ class _BookingsPageState extends State<BookingsPage> {
 
             const SizedBox(height: 16),
 
+<<<<<<< HEAD
+            // Booking list or empty message
+            Expanded(
+              child: showEmptyState
+                  ? _buildEmptyState('No bookings available.')
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      itemCount: currentBookings.length,
+                      itemBuilder: (context, index) {
+                        return _buildBookingCard(
+                          currentBookings[index],
+                          _selectedTab == 'Past',
+                        );
+                      },
+                    ),
+=======
             // Bookings list or empty state
            Expanded(
               child: StreamBuilder<List<Map<String, dynamic>>>(
@@ -527,6 +538,7 @@ class _BookingsPageState extends State<BookingsPage> {
                   );
                 },
               ),
+>>>>>>> 17f13d10bc8cd790ce5758ab127778bd5473bb53
             ),
           ],
         ),
